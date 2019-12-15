@@ -1,0 +1,15 @@
+[submodule "vendor/libunwind"]
+	ignore = dirty
+	branch = master
+	path = vendor/libunwind
+	url = https://github.com/llvm-mirror/libunwind.git
+[submodule "vendor/libbacktrace"]
+	path = vendor/libbacktrace
+	url = https://github.com/rust-lang-nursery/libbacktrace.git
+	ignore = dirty
+	branch = rust-snapshot-2018-05-22
+[submodule "vendor/whereami"]
+	path = vendor/whereami
+	url = https://github.com/gpakosz/whereami.git
+	ignore = dirty
+	branch = master

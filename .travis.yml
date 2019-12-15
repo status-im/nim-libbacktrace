@@ -1,0 +1,30 @@
+language: c
+dist: bionic
+
+cache:
+  directories:
+    - NimBinaries
+
+matrix:
+  include:
+    - os: linux
+      arch: amd64
+      env:
+        - NPROC=2
+    - os: linux
+      arch: arm64
+      env:
+        - NPROC=6 # Worth trying more than 2 parallel jobs: https://travis-ci.community/t/no-cache-support-on-arm64/5416/8
+    - os: osx
+      env:
+        - NPROC=2
+
+install:
+  - curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
+  - env MAKE="make -j2" bash build_nim.sh Nim csources dist/nimble NimBinaries
+  - export PATH=$PWD/Nim/bin:$PATH
+
+script:
+  - set -e # fail fast
+  - make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" test
+
