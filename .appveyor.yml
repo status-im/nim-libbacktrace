@@ -28,5 +28,6 @@ install:
 test_script:
   - mingw32-make -j2 test
 
+build: off
 deploy: off
 
