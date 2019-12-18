@@ -31,7 +31,7 @@ else:
     {.passl: installPath / "lib" / "libunwind.a".}
 
 
-proc getBacktrace*(): string {.exportc.} =
+proc getBacktrace*(): string =
   var
     bt: cstring = get_backtrace_c()
     btLen = len(bt)
@@ -40,4 +40,7 @@ proc getBacktrace*(): string {.exportc.} =
   if btLen > 0:
     copyMem(addr(result[0]), bt, btLen)
   c_free(bt)
+
+when defined(nimStackTraceOverride):
+  registerStackTraceOverride(getBacktrace)
 

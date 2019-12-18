@@ -142,7 +142,7 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	}
 
 	// these ones appear when we're used inside the Nim compiler
-	if (strings_equal(demangled_function, "auxWriteStackTraceWithLibbacktrace") ||
+	if (strings_equal(demangled_function, "auxWriteStackTraceWithOverride") ||
 			strings_equal(demangled_function, "rawWriteStackTrace") ||
 			strings_equal(demangled_function, "writeStackTrace") ||
 			strings_equal(demangled_function, "raiseExceptionAux") ||
