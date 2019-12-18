@@ -26,7 +26,7 @@ install:
   - SET PATH=%CD%\Nim\bin;%PATH%
 
 test_script:
-  - mingw32-make -j2 test
+  - mingw32-make -j2 V=1 test
 
 build: off
 deploy: off
