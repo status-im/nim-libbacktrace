@@ -1,4 +1,10 @@
-# nim-libbacktrace - all the backtrace, none of the overhead
+# All the backtrace, none of the overhead
+
+[![Build Status](https://travis-ci.org/status-im/nim-libbacktrace.svg?branch=master)](https://travis-ci.org/status-im/nim-libbacktrace)
+[![Build status](https://ci.appveyor.com/api/projects/status/mrvu6ks50dl5y5y4/branch/master?svg=true)](https://ci.appveyor.com/project/nimbus/nim-libbacktrace/branch/master)
+[![License: Apache](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![Stability: experimental](https://img.shields.io/badge/stability-experimental-orange.svg)
 
 Nim's default stack tracing functionality comes with significant
 overhead, by adding `nimln_()`, `nimfr_()` calls all over the place. The
