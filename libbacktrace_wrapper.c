@@ -119,12 +119,15 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 
 	cbd->bt_lineno++;
 
-	if (cbd->bt_lineno == MAX_BACKTRACE_LINES)
+	if (cbd->bt_lineno == MAX_BACKTRACE_LINES) {
+		free(backtrace_line);
 		return 1; // stop printing the backtrace
+	}
 
 	if (function == NULL || filename == NULL) {
 		if (cbd->bt_lineno == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
+		free(backtrace_line);
 		return 1; // stop printing the backtrace
 	}
 
@@ -132,16 +135,22 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 
 	// skip internal Nim functions
 	if (strings_equal(demangled_function, "NimMainInner") ||
-			strings_equal(demangled_function, "NimMain"))
+			strings_equal(demangled_function, "NimMain")) {
+		free(backtrace_line);
+		free(demangled_function);
 		return 1; // stop printing the backtrace
+	}
 
 	// these ones appear when we're used inside the Nim compiler
 	if (strings_equal(demangled_function, "auxWriteStackTraceWithLibbacktrace") ||
 			strings_equal(demangled_function, "rawWriteStackTrace") ||
 			strings_equal(demangled_function, "writeStackTrace") ||
 			strings_equal(demangled_function, "raiseExceptionAux") ||
-			strings_equal(demangled_function, "raiseExceptionEx"))
+			strings_equal(demangled_function, "raiseExceptionEx")) {
+		free(backtrace_line);
+		free(demangled_function);
 		return 0; //skip it, but continue the backtrace
+	}
 
 	if (strings_equal(demangled_function, "NimMainModule")) {
 		// "/foo/bar/test2.nim" -> "test2"
