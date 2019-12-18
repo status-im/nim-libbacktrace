@@ -149,6 +149,7 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			strings_equal(demangled_function, "raiseExceptionEx")) {
 		free(backtrace_line);
 		free(demangled_function);
+		cbd->bt_lineno--;
 		return 0; //skip it, but continue the backtrace
 	}
 
