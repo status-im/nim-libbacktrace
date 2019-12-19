@@ -38,10 +38,8 @@ power!)
 
 ## Supported platforms
 
-Tested with GCC and LLVM on Linux and macOS.
-
-libbacktrace can't find debugging symbols in Mingw-w64 8.1.0 (posix-seh-rev0)
-64-bit PE-COFF binaries, for some unknown reason.
+Tested with GCC and LLVM on Linux, macOS and Windows (with Mingw-w64 and the
+MSYS that comes with "Git for Windows").
 
 ## Usage
 
@@ -86,8 +84,7 @@ You need Make, CMake and, of course, Nim up and running.
 The other dependencies are bundled, for your convenience. We use a [libbacktrace
 fork](https://github.com/rust-lang-nursery/libbacktrace/tree/rust-snapshot-2018-05-22)
 with macOS support and [LLVM's libunwind
-variant](https://github.com/llvm-mirror/libunwind) that's only needed on,
-you've guessed it, macOS.
+variant](https://github.com/llvm-mirror/libunwind) that's needed on macOS and Windows.
 
 If you know better and want to use your system's libbacktrace package instead
 of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing

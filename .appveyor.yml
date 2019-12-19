@@ -30,7 +30,7 @@ install:
   - curl -o vendor\libbacktrace\config.sub -L -s -S "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD"
 
 test_script:
-  - mingw32-make -j2 V=1 test
+  - mingw32-make -j2 test
 
 build: off
 deploy: off

@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Status Research & Development GmbH
 # Licensed under either of
-#  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
-#  * MIT license ([LICENSE-MIT](LICENSE-MIT))
+#  * Apache License, version 2.0,
+#  * MIT license
 # at your option.
 # This file may not be copied, modified, or distributed except according to
 # those terms.
@@ -12,22 +12,23 @@
 
 import libbacktrace_wrapper, os, system/ansi_c
 
+const installPath = currentSourcePath.parentDir() / "install" / "usr"
+
 {.passc: "-I" & currentSourcePath.parentDir().}
 
 when defined(cpp):
-  {.compile: "libbacktrace_wrapper.cpp".}
+  {.passl: installPath / "lib" / "libbacktracenimcpp.a".}
 else:
-  {.compile: "libbacktrace_wrapper.c".}
+  {.passl: installPath / "lib" / "libbacktracenim.a".}
 
 when defined(libbacktraceUseSystemLibs):
   {.passl: "-lbacktrace".}
   when defined(macosx):
     {.passl: "-lunwind".}
 else:
-  const installPath = currentSourcePath.parentDir() / "install" / "usr"
   {.passc: "-I" & installPath / "include".}
   {.passl: installPath / "lib" / "libbacktrace.a".}
-  when defined(macosx):
+  when defined(macosx) or defined(windows):
     {.passl: installPath / "lib" / "libunwind.a".}
 
 

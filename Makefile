@@ -27,29 +27,53 @@ ifneq ($(USE_SYSTEM_LIBS), 0)
 endif
 
 ECHO_AND_RUN = echo -e "\n$(CMD)\n"; $(CMD) $(MACOS_DEBUG_SYMBOLS) && ./build/$@
+LIBDIR := install/usr/lib
+INCLUDEDIR := install/usr/include
+CFLAGS += -g -O3 -std=gnu99 -pipe -Wall -Wextra
+CXXFLAGS += -g -O3 -std=gnu++11 -pipe -Wall -Wextra
+CPPFLAGS := -I"$(CURDIR)/$(INCLUDEDIR)"
+LDLIBS := -L"$(CURDIR)/$(LIBDIR)"
+AR := ar
+# for Mingw-w64
+CC := gcc
+CXX := g++
 
 TESTS := test1
 
-.PHONY: all libbacktrace libunwind clean test $(TESTS)
+.PHONY: all clean test $(TESTS)
 
 ifeq ($(USE_SYSTEM_LIBS), 0)
-all: libbacktrace
+LIBBACKTRACE_DEP := $(LIBDIR)/libbacktrace.a
 else
-all:
+LIBBACKTRACE_DEP :=
 endif
 
-$(SILENT_TARGET_PREFIX).SILENT:
+all: $(LIBBACKTRACE_DEP) $(LIBDIR)/libbacktracenim.a $(LIBDIR)/libbacktracenimcpp.a
 
-libbacktrace: install/usr/lib/libbacktrace.a
+$(LIBDIR)/libbacktracenim.a: libbacktrace_wrapper.o | $(LIBDIR)
+	echo -e $(BUILD_MSG) "$@" && \
+		rm -f $@ && \
+		$(AR) rcs $@ $<
+
+# it doesn't link to libbacktrace.a, but it needs the headers installed by that target
+libbacktrace_wrapper.o: libbacktrace_wrapper.c $(LIBBACKTRACE_DEP)
+
+$(LIBDIR)/libbacktracenimcpp.a: libbacktrace_wrapper_cpp.o | $(LIBDIR)
+	echo -e $(BUILD_MSG) "$@" && \
+		rm -f $@ && \
+		$(AR) rcs $@ $<
+
+# implicit rule doesn't kick in
+libbacktrace_wrapper_cpp.o: libbacktrace_wrapper.cpp $(LIBBACKTRACE_DEP)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+$(LIBDIR):
+	mkdir -p $@
 
 #########
 # macOS #
 #########
 ifeq ($(shell uname), Darwin)
-# libbacktrace needs to find libunwind during compilation
-export CPPFLAGS := $(CPPFLAGS) -I"$(CURDIR)/install/usr/include"
-export LDFLAGS := $(LDFLAGS) -L"$(CURDIR)/install/usr/lib"
-
 # TODO: disable when this issue is fixed: https://github.com/nim-lang/Nim/issues/12735
 MACOS_DEBUG_SYMBOLS = && dsymutil build/$@
 
@@ -57,38 +81,59 @@ BUILD_MSG := "Building:"
 
 #- macOS Clang needs the LLVM libunwind variant
 #  (GCC comes with its own, in libgcc_s.so.1, used even by Clang itself, on other platforms)
-#- this library doesn't support parallel builds, hence the "-j1"
-#- libtool can't handle paths with spaces on Windows, so we can't do `mingw32-make install`
-install/usr/lib/libbacktrace.a: install/usr/lib/libunwind.a
-else
-install/usr/lib/libbacktrace.a:
+USE_VENDORED_LIBUNWIND := 1
 endif # macOS
-	echo -e $(BUILD_MSG) "libbacktrace" && \
+
+###########
+# Windows #
+###########
+ifeq ($(OS), Windows_NT)
+BUILD_MSG := "Building:"
+CPPFLAGS += -D__STDC_FORMAT_MACROS -D_WIN32_WINNT=0x0600
+CMAKE_ARGS := -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND"
+
+# the GCC one doesn't seem to work on 64 bit Windows
+USE_VENDORED_LIBUNWIND := 1
+
+LIBBACKTRACE_SED := sed -i 's/\$$[({]SHELL[)}]/"$$(SHELL)"/g' Makefile
+else
+LIBBACKTRACE_SED := true
+endif # Windows
+
+ifeq ($(USE_VENDORED_LIBUNWIND), 1)
+# libbacktrace needs to find libunwind during compilation
+export CPPFLAGS
+export LDLIBS
+
+# CMake ignores CPPFLAGS in the environment
+export CFLAGS += $(CPPFLAGS)
+export CXXFLAGS += $(CPPFLAGS)
+
+#- this library doesn't support parallel builds, hence the "-j1"
+#- the "Git for Windows" Bash is usually installed in a path with spaces, which messes up the Makefile. Add quotes.
+$(LIBDIR)/libbacktrace.a: $(LIBDIR)/libunwind.a
+else
+$(LIBDIR)/libbacktrace.a:
+endif # USE_VENDORED_LIBUNWIND
+	echo -e $(BUILD_MSG) "$@" && \
 	cd vendor/libbacktrace && \
 		./configure --prefix="/usr" --disable-shared --enable-static MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
-		$(MAKE) -j1 clean all $(HANDLE_OUTPUT) && \
-		mkdir -p "$(CURDIR)"/install/usr/{include,lib} && \
-		cp -a backtrace.h backtrace-supported.h "$(CURDIR)/install/usr/include/" && \
-		cp -a .libs/libbacktrace.a libbacktrace.la "$(CURDIR)/install/usr/lib/"
+		$(LIBBACKTRACE_SED) && \
+		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
 
-libunwind: install/usr/lib/libunwind.a
-
-install/usr/lib/libunwind.a:
-	+ echo -e $(BUILD_MSG) "libunwind" && \
+# DESTDIR does not work on Windows for a CMake-generated Makefile
+$(LIBDIR)/libunwind.a:
+	+ echo -e $(BUILD_MSG) "$@" && \
 	cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		cmake -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
-			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX=/usr . $(HANDLE_OUTPUT) && \
-		$(MAKE) DESTDIR="$(CURDIR)/install" clean install $(HANDLE_OUTPUT) && \
+			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" $(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
+		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
 		cp -a include "$(CURDIR)/install/usr/"
 
 test: $(TESTS)
 
-ifeq ($(USE_SYSTEM_LIBS), 0)
-$(TESTS): libbacktrace
-else
-$(TESTS):
-endif
+$(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native --stackTrace:off tests/$@.nim) $(ECHO_AND_RUN)
@@ -99,5 +144,7 @@ endif
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
 
 clean:
-	rm -rf install build
+	rm -rf install build *.o
+
+$(SILENT_TARGET_PREFIX).SILENT:
 

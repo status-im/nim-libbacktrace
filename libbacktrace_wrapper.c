@@ -1,8 +1,8 @@
 /*
 * Copyright (c) 2019 Status Research & Development GmbH
 * Licensed under either of
-*  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
-*  * MIT license ([LICENSE-MIT](LICENSE-MIT))
+*  * Apache License, version 2.0,
+*  * MIT license
 * at your option.
 * This file may not be copied, modified, or distributed except according to
 * those terms.
@@ -11,18 +11,30 @@
 #include <backtrace-supported.h>
 #include <backtrace.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "libbacktrace_wrapper.h"
 
+// https://stackoverflow.com/a/44383330
+#ifdef _WIN32
+# ifdef _WIN64
+#  define PRI_SIZET PRIu64
+# else
+#  define PRI_SIZET PRIu32
+# endif
+#else
+# define PRI_SIZET "zu"
+#endif
+
 // macOS Clang wants this before the WAI_MALLOC define
 static void *xmalloc(size_t size)
 {
 	void *res = malloc(size);
 	if (res == NULL) {
-		fprintf(stderr, "FATAL: malloc() failed to allocate %lu bytes.\n", size);
+		fprintf(stderr, "FATAL: malloc() failed to allocate %" PRI_SIZET " bytes.\n", size);
 		exit(1);
 	}
 	return res;
@@ -198,7 +210,7 @@ char *get_backtrace_c(void)
 		// using https://github.com/gpakosz/whereami
 		int self_exec_path_length = wai_getExecutablePath(NULL, 0, NULL);
 		if (self_exec_path_length == -1)
-			return "whereami error: could not get the program's path on this platform.\n";
+			return xstrdup("whereami error: could not get the program's path on this platform.\n");
 		char *self_exec_path = (char*)xmalloc(self_exec_path_length + 1);
 		wai_getExecutablePath(self_exec_path, self_exec_path_length, NULL);
 		self_exec_path[self_exec_path_length] = '\0';
@@ -215,7 +227,7 @@ char *get_backtrace_c(void)
 	if (cb_data.state != NULL)
 		backtrace_full(cb_data.state, 2, success_callback, error_callback, &cb_data);
 	else
-		return ""; // the error callback has already been called
+		return xstrdup(""); // the error callback has already been called
 
 	if (cb_data.bt_lineno == MAX_BACKTRACE_LINES)
 		cb_data.bt_lineno--;
