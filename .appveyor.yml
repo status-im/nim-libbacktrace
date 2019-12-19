@@ -25,6 +25,10 @@ install:
   - env MAKE="mingw32-make -j2" ARCH_OVERRIDE=%PLATFORM% bash build_nim.sh Nim csources dist/nimble NimBinaries
   - SET PATH=%CD%\Nim\bin;%PATH%
 
+  # ./configure can't figure out the "MSYS_NT-6.3" platform with old autoconf files
+  - curl -o vendor\libbacktrace\config.guess -L -s -S "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
+  - curl -o vendor\libbacktrace\config.sub -L -s -S "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD"
+
 test_script:
   - mingw32-make -j2 V=1 test
 
