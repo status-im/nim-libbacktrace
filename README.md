@@ -38,8 +38,8 @@ power!)
 
 ## Supported platforms
 
-Tested with GCC and LLVM on Linux, macOS and Windows (with Mingw-w64 and the
-MSYS that comes with "Git for Windows").
+Tested with GCC and LLVM on Linux, macOS and 64-bit Windows (with Mingw-w64 and
+the MSYS that comes with "Git for Windows").
 
 ## Usage
 
