@@ -77,6 +77,10 @@ Now you can run it:
 ./bttest
 ```
 
+### Debugging
+
+`export NIM_LIBBACKTRACE_DEBUG=1` to see the trace lines hidden by default.
+
 ## Dependencies
 
 You need Make, CMake and, of course, Nim up and running.

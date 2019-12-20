@@ -56,7 +56,7 @@ $(LIBDIR)/libbacktracenim.a: libbacktrace_wrapper.o | $(LIBDIR)
 		$(AR) rcs $@ $<
 
 # it doesn't link to libbacktrace.a, but it needs the headers installed by that target
-libbacktrace_wrapper.o: libbacktrace_wrapper.c $(LIBBACKTRACE_DEP)
+libbacktrace_wrapper.o: libbacktrace_wrapper.c libbacktrace_wrapper.h $(LIBBACKTRACE_DEP)
 
 $(LIBDIR)/libbacktracenimcpp.a: libbacktrace_wrapper_cpp.o | $(LIBDIR)
 	echo -e $(BUILD_MSG) "$@" && \
@@ -64,7 +64,7 @@ $(LIBDIR)/libbacktracenimcpp.a: libbacktrace_wrapper_cpp.o | $(LIBDIR)
 		$(AR) rcs $@ $<
 
 # implicit rule doesn't kick in
-libbacktrace_wrapper_cpp.o: libbacktrace_wrapper.cpp $(LIBBACKTRACE_DEP)
+libbacktrace_wrapper_cpp.o: libbacktrace_wrapper.cpp libbacktrace_wrapper.c libbacktrace_wrapper.h $(LIBBACKTRACE_DEP)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 $(LIBDIR):

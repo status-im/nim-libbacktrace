@@ -49,13 +49,16 @@ static void *xmalloc(size_t size)
 #define MAX_BACKTRACE_LINES 128
 
 #define INITIAL_LINE_SIZE 100
+#define DEBUG_ENV_VAR_NAME "NIM_LIBBACKTRACE_DEBUG"
+static __thread int debug = 0;
 
 struct callback_data {
 	struct backtrace_state *state;
 	int bt_lineno;
-	int backtrace_line_size; // buffer size for a single backtrace line; starts at INITIAL_LINE_SIZE and is doubled when exceeded
+	int backtrace_line_size; // Buffer size for a single backtrace line. Starts at INITIAL_LINE_SIZE and is doubled when exceeded.
 	char *backtrace_lines[MAX_BACKTRACE_LINES];
-	int backtrace_line_lengths[MAX_BACKTRACE_LINES]; // excluding the terminating null byte
+	int backtrace_line_lengths[MAX_BACKTRACE_LINES]; // Excluding the terminating null byte.
+	int nim_main_module_seen; // Did we already see NimMainModule?
 };
 
 static __thread struct callback_data cb_data;
@@ -80,8 +83,12 @@ static void error_callback(void *data __attribute__ ((__unused__)),
 
 static int strings_equal(const char *str1, const char *str2)
 {
-	size_t len2 = strlen(str2);
-	return strlen(str1) == len2 && strncmp(str1, str2, len2) == 0;
+	if (!str1 || !str2) {
+		return 0;
+	} else {
+		size_t len2 = strlen(str2);
+		return strlen(str1) == len2 && strncmp(str1, str2, len2) == 0;
+	}
 }
 
 #ifdef __cplusplus
@@ -98,13 +105,13 @@ static char *demangle(const char *function)
 	char *res = xstrdup(function);
 
 #ifdef __cplusplus
-	// C++ function name demangling
+	// C++ function name demangling.
 	size_t demangled_len;
 	int status;
 	char* demangled = abi::__cxa_demangle(function, NULL, &demangled_len, &status);
 	if (demangled && status == 0) {
 		demangled[demangled_len] = '\0';
-		// get rid of function parenthesis and params
+		// Get rid of function parenthesis and params.
 		char *par_pos = strchr(demangled, '(');
 		if (par_pos)
 			*par_pos = '\0';
@@ -113,7 +120,7 @@ static char *demangle(const char *function)
 	}
 #endif // __cplusplus
 
-	// Nim demangling
+	// Nim demangling.
 	char *pos = strstr(res, "__");
 	if (pos)
 		*pos = '\0';
@@ -124,33 +131,46 @@ static char *demangle(const char *function)
 static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	const char *filename, int lineno, const char *function)
 {
-	// clang++ makes us do all these pointer casts
+	// clang++ makes us do all these pointer casts.
 	struct callback_data *cbd = (struct callback_data*)data;
 	char *backtrace_line = (char*)xmalloc(cbd->backtrace_line_size);
-	int output_size; // excludes the terminating null byte
+	int output_size; // Excludes the terminating null byte.
 
 	cbd->bt_lineno++;
 
 	if (cbd->bt_lineno == MAX_BACKTRACE_LINES) {
 		free(backtrace_line);
-		return 1; // stop printing the backtrace
+		return 1; // Stop printing the backtrace.
 	}
 
 	if (function == NULL || filename == NULL) {
 		if (cbd->bt_lineno == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
 		free(backtrace_line);
-		return 1; // stop printing the backtrace
+		if (debug) {
+			cbd->bt_lineno--;
+			return 0; // Keep going.
+		} else {
+			return 1; // Stop printing the backtrace.
+		}
 	}
 
 	char *demangled_function = demangle(function);
 
 	// skip internal Nim functions
-	if (strings_equal(demangled_function, "NimMainInner") ||
-			strings_equal(demangled_function, "NimMain")) {
-		free(backtrace_line);
-		free(demangled_function);
-		return 1; // stop printing the backtrace
+	if ((strings_equal(demangled_function, "NimMainInner") ||
+			strings_equal(demangled_function, "NimMain")) &&
+				cbd->nim_main_module_seen) {
+		/*
+		* If we skip them unconditionally, we may end up with an empty
+		* backtrace when `-d:release` leads to NimMainModule being
+		* inlined.
+		*/
+		if (!debug) {
+			free(backtrace_line);
+			free(demangled_function);
+			return 1; // Stop printing the backtrace.
+		}
 	}
 
 	// these ones appear when we're used inside the Nim compiler
@@ -159,13 +179,17 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			strings_equal(demangled_function, "writeStackTrace") ||
 			strings_equal(demangled_function, "raiseExceptionAux") ||
 			strings_equal(demangled_function, "raiseExceptionEx")) {
-		free(backtrace_line);
-		free(demangled_function);
-		cbd->bt_lineno--;
-		return 0; //skip it, but continue the backtrace
+		if (!debug) {
+			free(backtrace_line);
+			free(demangled_function);
+			cbd->bt_lineno--;
+			return 0; // Skip it, but continue the backtrace.
+		}
 	}
 
 	if (strings_equal(demangled_function, "NimMainModule")) {
+		cbd->nim_main_module_seen = 1;
+
 		// "/foo/bar/test2.nim" -> "test2"
 		char *nim_file = xstrdup(filename);
 		char *pos = basename(nim_file);
@@ -205,9 +229,14 @@ char *get_backtrace_c(void)
 #ifdef BACKTRACE_SUPPORTED
 	if (!cb_data_initialised) {
 		cb_data_initialised = 1;
+
+		char *debug_env_var_value = getenv(DEBUG_ENV_VAR_NAME);
+		if (strings_equal(debug_env_var_value, "1"))
+			debug = 1;
+
 		memset(&cb_data, '\0', sizeof(struct callback_data));
 
-		// using https://github.com/gpakosz/whereami
+		// Using https://github.com/gpakosz/whereami
 		int self_exec_path_length = wai_getExecutablePath(NULL, 0, NULL);
 		if (self_exec_path_length == -1)
 			return xstrdup("whereami error: could not get the program's path on this platform.\n");
@@ -227,7 +256,7 @@ char *get_backtrace_c(void)
 	if (cb_data.state != NULL)
 		backtrace_full(cb_data.state, 2, success_callback, error_callback, &cb_data);
 	else
-		return xstrdup(""); // the error callback has already been called
+		return xstrdup(""); // The error callback has already been called.
 
 	if (cb_data.bt_lineno == MAX_BACKTRACE_LINES)
 		cb_data.bt_lineno--;
@@ -235,7 +264,7 @@ char *get_backtrace_c(void)
 	int total_length = 0;
 	int i;
 
-	// the Nim tradition wants them in reverse order
+	// The Nim tradition wants them in reverse order.
 	for (i = cb_data.bt_lineno; i >= 0; i--) {
 		if (cb_data.backtrace_lines[i] != NULL)
 			total_length += cb_data.backtrace_line_lengths[i];
@@ -245,6 +274,7 @@ char *get_backtrace_c(void)
 	char *last_null_byte = backtrace;
 	*last_null_byte = '\0';
 
+	// Besides producing the string result, we also initialise cb_data for the next run.
 	for (i = cb_data.bt_lineno; i >= 0; i--) {
 		if (cb_data.backtrace_lines[i] != NULL) {
 			last_null_byte = (char*)memccpy(last_null_byte,
