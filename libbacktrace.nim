@@ -23,7 +23,7 @@ else:
 
 when defined(libbacktraceUseSystemLibs):
   {.passl: "-lbacktrace".}
-  when defined(macosx):
+  when defined(macosx) or defined(windows):
     {.passl: "-lunwind".}
 else:
   {.passc: "-I" & installPath / "include".}
@@ -31,6 +31,8 @@ else:
   when defined(macosx) or defined(windows):
     {.passl: installPath / "lib" / "libunwind.a".}
 
+when defined(windows):
+  {.passl: "-lpsapi".}
 
 proc getBacktrace*(): string =
   var
