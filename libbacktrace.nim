@@ -34,7 +34,7 @@ else:
 when defined(windows):
   {.passl: "-lpsapi".}
 
-proc getBacktrace*(): string =
+proc getBacktrace*(): string {.noinline.} =
   var
     bt: cstring = get_backtrace_c()
     btLen = len(bt)
