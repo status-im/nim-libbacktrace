@@ -224,6 +224,7 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	return 0;
 }
 
+// The returned string needs to be freed by the caller.
 char *get_backtrace_c(void)
 {
 #ifdef BACKTRACE_SUPPORTED
@@ -253,10 +254,14 @@ char *get_backtrace_c(void)
 		cb_data.bt_lineno = -1;
 	}
 
-	if (cb_data.state != NULL)
-		backtrace_full(cb_data.state, 2, success_callback, error_callback, &cb_data);
-	else
+	if (cb_data.state != NULL) {
+		if (debug)
+			backtrace_full(cb_data.state, 0, success_callback, error_callback, &cb_data);
+		else
+			backtrace_full(cb_data.state, 2, success_callback, error_callback, &cb_data);
+	} else {
 		return xstrdup(""); // The error callback has already been called.
+	}
 
 	if (cb_data.bt_lineno == MAX_BACKTRACE_LINES)
 		cb_data.bt_lineno--;
@@ -289,7 +294,7 @@ char *get_backtrace_c(void)
 
 	return backtrace;
 #else
-	return "ERROR: libbacktrace is not supported on this platform.\n";
+	return xstrdup("ERROR: libbacktrace is not supported on this platform.\n");
 #endif // BACKTRACE_SUPPORTED
 }
 

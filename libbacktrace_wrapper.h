@@ -15,6 +15,7 @@
 extern "C" {
 #endif
 
+// The returned string needs to be freed by the caller.
 char *get_backtrace_c(void) __attribute__((noinline));
 
 #ifdef __cplusplus
