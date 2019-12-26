@@ -52,9 +52,8 @@ import libbacktrace
 echo getBacktrace()
 
 # Should be the same output as writeStackTrace() - minus the header.
-# When the C compiler inlines some procs, libbacktrace might get confused with proc names,
-# but it gets the files and line numbers right nonetheless.
 ```
+
 
 We need debugging symbols in the binary and we can do without Nim's bloated and
 slow stack trace implementation:
@@ -76,6 +75,11 @@ Now you can run it:
 ```bash
 ./bttest
 ```
+
+When the C compiler inlines some functions, or does tail-call optimisation,
+your stack trace might be incomplete.
+
+If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-calls"`.
 
 ### Debugging
 
