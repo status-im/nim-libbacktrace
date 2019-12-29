@@ -76,14 +76,30 @@ Now you can run it:
 ./bttest
 ```
 
-When the C compiler inlines some functions, or does tail-call optimisation,
-your stack trace might be incomplete.
+When the C compiler inlines some functions, or does tail-call optimisation -
+usually with `-d:release` - your stack trace might be incomplete.
 
 If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-calls"`.
 
 ### Debugging
 
 `export NIM_LIBBACKTRACE_DEBUG=1` to see the trace lines hidden by default.
+
+### Nim compiler support
+
+As of 2019-12-29, Nim's "devel" branch supports [replacing the default stack
+tracing mechanism with an external one](https://github.com/nim-lang/Nim/pull/12922).
+
+This means you no longer have to call `getBacktrace()` yourself, if you compile
+your program like this:
+
+`nim c -r --debugger:native --stacktrace:off -d:nimStackTraceOverride --import:libbacktrace foo.nim`
+
+You can even use libbacktrace in the Nim compiler itself, by building it with:
+
+`./koch boot -d:release --debugger:native -d:nimStackTraceOverride --import:libbacktrace`
+
+(`-d:release` implies `--stacktrace:off`)
 
 ## Dependencies
 
