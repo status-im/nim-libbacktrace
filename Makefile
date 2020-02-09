@@ -33,6 +33,7 @@ CFLAGS += -g -O3 -std=gnu99 -pipe -Wall -Wextra
 CXXFLAGS += -g -O3 -std=gnu++11 -pipe -Wall -Wextra
 CPPFLAGS := -I"$(CURDIR)/$(INCLUDEDIR)"
 LDLIBS := -L"$(CURDIR)/$(LIBDIR)"
+CURL := curl -L -s -S
 AR := ar
 # for Mingw-w64
 CC := gcc
@@ -117,6 +118,8 @@ $(LIBDIR)/libbacktrace.a:
 endif # USE_VENDORED_LIBUNWIND
 	echo -e $(BUILD_MSG) "$@" && \
 	cd vendor/libbacktrace && \
+		$(CURL) -o config.guess "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;h=45001cfecde8f3e0716992163e3e211b6997f749;hb=HEAD" && \
+		$(CURL) -o config.sub "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;h=f02d43ad500ca9fc7467e3f28151ce18bc98bfa3;hb=HEAD" && \
 		./configure --prefix="/usr" --disable-shared --enable-static MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
