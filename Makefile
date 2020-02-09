@@ -145,6 +145,8 @@ $(TESTS): all
 
 clean:
 	rm -rf install build *.o
+	cd vendor/libbacktrace && \
+		{ [[ -e Makefile ]] && $(MAKE) clean; }
 
 $(SILENT_TARGET_PREFIX).SILENT:
 
