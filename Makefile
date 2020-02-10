@@ -29,8 +29,8 @@ endif
 ECHO_AND_RUN = echo -e "\n$(CMD)\n"; $(CMD) $(MACOS_DEBUG_SYMBOLS) && ./build/$@
 LIBDIR := install/usr/lib
 INCLUDEDIR := install/usr/include
-CFLAGS += -g -O3 -std=gnu99 -pipe -Wall -Wextra
-CXXFLAGS += -g -O3 -std=gnu++11 -pipe -Wall -Wextra
+CFLAGS += -g -O3 -std=gnu99 -pipe -Wall -Wextra -fPIC
+CXXFLAGS += -g -O3 -std=gnu++11 -pipe -Wall -Wextra -fPIC
 CPPFLAGS := -I"$(CURDIR)/$(INCLUDEDIR)"
 LDLIBS := -L"$(CURDIR)/$(LIBDIR)"
 CURL := curl -L -s -S
