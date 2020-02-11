@@ -34,16 +34,10 @@
 # define snprintf __mingw_snprintf
 #endif
 
-#define ALIGN(v, a)	(((size_t)(v) + (a) - 1) & ~((a) - 1))
-
 // macOS Clang wants this before the WAI_MALLOC define
 static void *xmalloc(size_t size)
 {
-#ifdef _WIN32
-	void *res = _aligned_malloc(ALIGN(size, 16), 16);
-#else
 	void *res = malloc(size);
-#endif
 	if (res == NULL) {
 		fprintf(stderr, "FATAL: malloc() failed to allocate %" PRI_SIZET " bytes.\n", size);
 		exit(1);
@@ -57,11 +51,7 @@ void xfree(void *ptr)
 		fprintf(stderr, "BUG: xfree() received a NULL pointer.\n");
 		return;
 	}
-#ifdef _WIN32
-	_aligned_free(ptr);
-#else
 	free(ptr);
-#endif
 }
 
 #define WAI_MALLOC(size) xmalloc(size)
