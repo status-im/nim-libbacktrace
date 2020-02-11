@@ -29,6 +29,11 @@
 # define PRI_SIZET "zu"
 #endif
 
+// https://sourceforge.net/p/mingw/mailman/mingw-users/thread/46C99879.8070205@cox.net/
+#ifdef __MINGW32__
+# define snprintf __mingw_snprintf
+#endif
+
 #define ALIGN(v, a)	(((size_t)(v) + (a) - 1) & ~((a) - 1))
 
 // macOS Clang wants this before the WAI_MALLOC define
