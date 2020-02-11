@@ -34,13 +34,25 @@
 // macOS Clang wants this before the WAI_MALLOC define
 static void *xmalloc(size_t size)
 {
-	/*void *res = malloc(size);*/
-	void *res = aligned_alloc(16, ALIGN(size, 16));
+#ifdef _WIN32
+	void *res = _aligned_malloc(ALIGN(size, 16), 16);
+#else
+	void *res = malloc(size);
+#endif
 	if (res == NULL) {
 		fprintf(stderr, "FATAL: malloc() failed to allocate %" PRI_SIZET " bytes.\n", size);
 		exit(1);
 	}
 	return res;
+}
+
+static void xfree(void *ptr)
+{
+#ifdef _WIN32
+	_aligned_free(ptr);
+#else
+	free(ptr);
+#endif
 }
 
 #define WAI_MALLOC(size) xmalloc(size)
@@ -118,7 +130,7 @@ static char *demangle(const char *function)
 		char *par_pos = strchr(demangled, '(');
 		if (par_pos)
 			*par_pos = '\0';
-		free(res);
+		xfree(res);
 		res = demangled;
 	}
 #endif // __cplusplus
@@ -142,14 +154,14 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	cbd->bt_lineno++;
 
 	if (cbd->bt_lineno == MAX_BACKTRACE_LINES) {
-		free(backtrace_line);
+		xfree(backtrace_line);
 		return 1; // Stop printing the backtrace.
 	}
 
 	if (function == NULL || filename == NULL) {
 		if (cbd->bt_lineno == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
-		free(backtrace_line);
+		xfree(backtrace_line);
 		if (debug) {
 			cbd->bt_lineno--;
 			return 0; // Keep going.
@@ -170,8 +182,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		* inlined.
 		*/
 		if (!debug) {
-			free(backtrace_line);
-			free(demangled_function);
+			xfree(backtrace_line);
+			xfree(demangled_function);
 			return 1; // Stop printing the backtrace.
 		}
 	}
@@ -183,8 +195,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			strings_equal(demangled_function, "raiseExceptionAux") ||
 			strings_equal(demangled_function, "raiseExceptionEx")) {
 		if (!debug) {
-			free(backtrace_line);
-			free(demangled_function);
+			xfree(backtrace_line);
+			xfree(demangled_function);
 			cbd->bt_lineno--;
 			return 0; // Skip it, but continue the backtrace.
 		}
@@ -199,9 +211,9 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		size_t len = strlen(pos);
 		if (len > 4)
 			pos[len - 4] = '\0';
-		free(demangled_function);
+		xfree(demangled_function);
 		demangled_function = xstrdup(pos);
-		free(nim_file);
+		xfree(nim_file);
 	}
 
 	while(1) {
@@ -215,11 +227,11 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			break;
 		} else {
 			cbd->backtrace_line_size *= 2;
-			free(backtrace_line);
+			xfree(backtrace_line);
 			backtrace_line = (char*)xmalloc(cbd->backtrace_line_size);
 		}
 	}
-	free(demangled_function);
+	xfree(demangled_function);
 
 	cbd->backtrace_lines[cbd->bt_lineno] = backtrace_line;
 	cbd->backtrace_line_lengths[cbd->bt_lineno] = output_size;
@@ -289,7 +301,7 @@ char *get_backtrace_c(void)
 					cb_data.backtrace_lines[i],
 					'\0',
 					cb_data.backtrace_line_lengths[i] + 1) - 1;
-			free(cb_data.backtrace_lines[i]);
+			xfree(cb_data.backtrace_lines[i]);
 			cb_data.backtrace_lines[i] = NULL;
 		}
 	}
