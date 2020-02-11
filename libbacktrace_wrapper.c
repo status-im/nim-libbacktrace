@@ -29,10 +29,13 @@
 # define PRI_SIZET "zu"
 #endif
 
+#define ALIGN(v, a)	(((size_t)(v) + (a) - 1) & ~((a) - 1))
+
 // macOS Clang wants this before the WAI_MALLOC define
 static void *xmalloc(size_t size)
 {
-	void *res = malloc(size);
+	/*void *res = malloc(size);*/
+	void *res = aligned_alloc(16, ALIGN(size, 16));
 	if (res == NULL) {
 		fprintf(stderr, "FATAL: malloc() failed to allocate %" PRI_SIZET " bytes.\n", size);
 		exit(1);
