@@ -46,7 +46,7 @@ static void *xmalloc(size_t size)
 	return res;
 }
 
-static void xfree(void *ptr)
+void xfree(void *ptr)
 {
 	if (ptr == NULL) {
 		fprintf(stderr, "BUG: xfree() received a NULL pointer.\n");
