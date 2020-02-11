@@ -48,6 +48,10 @@ static void *xmalloc(size_t size)
 
 static void xfree(void *ptr)
 {
+	if (ptr == NULL) {
+		fprintf(stderr, "BUG: xfree() received a NULL pointer.\n");
+		return;
+	}
 #ifdef _WIN32
 	_aligned_free(ptr);
 #else
@@ -56,6 +60,7 @@ static void xfree(void *ptr)
 }
 
 #define WAI_MALLOC(size) xmalloc(size)
+#define WAI_FREE(p) xfree(p)
 #include "vendor/whereami/src/whereami.h"
 // Yes, this is ugly. Using the Nim compiler as a build system is uglier.
 #include "vendor/whereami/src/whereami.c"
@@ -82,11 +87,9 @@ static __thread int cb_data_initialised = 0;
 
 static char *xstrdup(const char *s)
 {
-	char *res = strdup(s);
-	if (res == NULL) {
-		fprintf(stderr, "FATAL: strdup() failure.\n");
-		exit(1);
-	}
+	size_t len = strlen(s) + 1;
+	char *res = (char*)xmalloc(len);
+	memcpy(res, s, len);
 	return res;
 }
 
@@ -131,7 +134,8 @@ static char *demangle(const char *function)
 		if (par_pos)
 			*par_pos = '\0';
 		xfree(res);
-		res = demangled;
+		res = xstrdup(demangled);
+		free(demangled);
 	}
 #endif // __cplusplus
 
