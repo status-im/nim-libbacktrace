@@ -13,6 +13,3 @@
 proc get_backtrace_c*(): cstring {.importc: "get_backtrace_c",
                               header: "libbacktrace_wrapper.h".}
 
-proc xfree_backtrace_c*(p: pointer) {.importc: "xfree",
-                              header: "libbacktrace_wrapper.h".}
-

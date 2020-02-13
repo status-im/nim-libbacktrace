@@ -45,17 +45,7 @@ static void *xmalloc(size_t size)
 	return res;
 }
 
-void xfree(void *ptr)
-{
-	if (ptr == NULL) {
-		fprintf(stderr, "BUG: xfree() received a NULL pointer.\n");
-		return;
-	}
-	free(ptr);
-}
-
 #define WAI_MALLOC(size) xmalloc(size)
-#define WAI_FREE(p) xfree(p)
 #include "vendor/whereami/src/whereami.h"
 // Yes, this is ugly. Using the Nim compiler as a build system is uglier.
 #include "vendor/whereami/src/whereami.c"
@@ -82,9 +72,11 @@ static __thread int cb_data_initialised = 0;
 
 static char *xstrdup(const char *s)
 {
-	size_t len = strlen(s) + 1;
-	char *res = (char*)xmalloc(len);
-	memcpy(res, s, len);
+	char *res = strdup(s);
+	if (res == NULL) {
+		fprintf(stderr, "FATAL: strdup() failure.\n");
+		exit(1);
+	}
 	return res;
 }
 
@@ -128,9 +120,8 @@ static char *demangle(const char *function)
 		char *par_pos = strchr(demangled, '(');
 		if (par_pos)
 			*par_pos = '\0';
-		xfree(res);
-		res = xstrdup(demangled);
-		free(demangled);
+		free(res);
+		res = demangled;
 	}
 #endif // __cplusplus
 
@@ -153,14 +144,14 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	cbd->bt_lineno++;
 
 	if (cbd->bt_lineno == MAX_BACKTRACE_LINES) {
-		xfree(backtrace_line);
+		free(backtrace_line);
 		return 1; // Stop printing the backtrace.
 	}
 
 	if (function == NULL || filename == NULL) {
 		if (cbd->bt_lineno == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
-		xfree(backtrace_line);
+		free(backtrace_line);
 		if (debug) {
 			cbd->bt_lineno--;
 			return 0; // Keep going.
@@ -181,8 +172,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		* inlined.
 		*/
 		if (!debug) {
-			xfree(backtrace_line);
-			xfree(demangled_function);
+			free(backtrace_line);
+			free(demangled_function);
 			return 1; // Stop printing the backtrace.
 		}
 	}
@@ -194,8 +185,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			strings_equal(demangled_function, "raiseExceptionAux") ||
 			strings_equal(demangled_function, "raiseExceptionEx")) {
 		if (!debug) {
-			xfree(backtrace_line);
-			xfree(demangled_function);
+			free(backtrace_line);
+			free(demangled_function);
 			cbd->bt_lineno--;
 			return 0; // Skip it, but continue the backtrace.
 		}
@@ -210,9 +201,9 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		size_t len = strlen(pos);
 		if (len > 4)
 			pos[len - 4] = '\0';
-		xfree(demangled_function);
+		free(demangled_function);
 		demangled_function = xstrdup(pos);
-		xfree(nim_file);
+		free(nim_file);
 	}
 
 	while(1) {
@@ -226,11 +217,11 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			break;
 		} else {
 			cbd->backtrace_line_size *= 2;
-			xfree(backtrace_line);
+			free(backtrace_line);
 			backtrace_line = (char*)xmalloc(cbd->backtrace_line_size);
 		}
 	}
-	xfree(demangled_function);
+	free(demangled_function);
 
 	cbd->backtrace_lines[cbd->bt_lineno] = backtrace_line;
 	cbd->backtrace_line_lengths[cbd->bt_lineno] = output_size;
@@ -300,7 +291,7 @@ char *get_backtrace_c(void)
 					cb_data.backtrace_lines[i],
 					'\0',
 					cb_data.backtrace_line_lengths[i] + 1) - 1;
-			xfree(cb_data.backtrace_lines[i]);
+			free(cb_data.backtrace_lines[i]);
 			cb_data.backtrace_lines[i] = NULL;
 		}
 	}

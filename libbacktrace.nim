@@ -42,7 +42,7 @@ proc getBacktrace*(): string {.noinline.} =
   result = newString(btLen)
   if btLen > 0:
     copyMem(addr(result[0]), bt, btLen)
-  xfree_backtrace_c(bt)
+  c_free(bt)
 
 when defined(nimStackTraceOverride):
   registerStackTraceOverride(getBacktrace)

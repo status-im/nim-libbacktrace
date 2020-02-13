@@ -18,8 +18,6 @@ extern "C" {
 // The returned string needs to be freed by the caller.
 char *get_backtrace_c(void) __attribute__((noinline));
 
-void xfree(void *ptr);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
