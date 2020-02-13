@@ -87,8 +87,8 @@ If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-cal
 
 ### Nim compiler support
 
-As of 2019-12-29, Nim's "devel" branch supports [replacing the default stack
-tracing mechanism with an external one](https://github.com/nim-lang/Nim/pull/12922).
+Nim 1.0.6 supports [replacing the default stack tracing mechanism with an
+external one](https://github.com/nim-lang/Nim/pull/12922).
 
 This means you no longer have to call `getBacktrace()` yourself, if you compile
 your program like this:
