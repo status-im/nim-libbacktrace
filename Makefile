@@ -49,7 +49,12 @@ else
 LIBBACKTRACE_DEP :=
 endif
 
-all: $(LIBBACKTRACE_DEP) $(LIBDIR)/libbacktracenim.a $(LIBDIR)/libbacktracenimcpp.a
+all: $(LIBBACKTRACE_DEP) $(LIBDIR)/libbacktracenim.a
+
+BUILD_CXX_LIB := 1
+ifeq ($(BUILD_CXX_LIB), 1)
+all: $(LIBDIR)/libbacktracenimcpp.a
+endif
 
 $(LIBDIR)/libbacktracenim.a: libbacktrace_wrapper.o | $(LIBDIR)
 	echo -e $(BUILD_MSG) "$@" && \
@@ -146,13 +151,15 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:debug tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
+ifeq ($(BUILD_CXX_LIB), 1)
 	# one for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
+endif
 
 clean:
 	rm -rf install build *.o
 	cd vendor/libbacktrace && \
-		{ [[ -e Makefile ]] && $(MAKE) clean || true; }
+		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
 
 $(SILENT_TARGET_PREFIX).SILENT:
 

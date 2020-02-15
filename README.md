@@ -118,6 +118,8 @@ How does libbacktrace work on systems without libunwind installed, I hear you
 asking? It uses GCC's basic unwind support in libgcc\_s.so.1 - that runtime's so
 good that even Clang links it by default ;-)
 
+If you don't want to build the C++ wrapper, for some reason, pass `BUILD_CXX_LIB=0` to Make.
+
 To get the running binary's path in a cross-platform way, we rely on
 [whereami](https://github.com/gpakosz/whereami).
 
