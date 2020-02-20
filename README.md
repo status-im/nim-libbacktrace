@@ -106,7 +106,7 @@ You can even use libbacktrace in the Nim compiler itself, by building it with:
 You need Make, CMake and, of course, Nim up and running.
 
 The other dependencies are bundled, for your convenience. We use a [libbacktrace
-fork](https://github.com/rust-lang-nursery/libbacktrace/tree/rust-snapshot-2018-05-22)
+fork](https://github.com/status-im/libbacktrace)
 with macOS support and [LLVM's libunwind
 variant](https://github.com/llvm-mirror/libunwind) that's needed on macOS and Windows.
 
