@@ -7,7 +7,7 @@
 	path = vendor/libbacktrace
 	url = https://github.com/status-im/libbacktrace.git
 	ignore = dirty
-	branch = rust-snapshot-2018-05-22
+	branch = master
 [submodule "vendor/whereami"]
 	path = vendor/whereami
 	url = https://github.com/gpakosz/whereami.git
