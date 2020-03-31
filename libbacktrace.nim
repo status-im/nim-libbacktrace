@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Status Research & Development GmbH
+# Copyright (c) 2019-2020 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -34,16 +34,20 @@ else:
 when defined(windows):
   {.passl: "-lpsapi".}
 
-proc getBacktrace*(): string {.noinline.} =
-  var
-    bt: cstring = get_backtrace_c()
-    btLen = len(bt)
+# There is no "copyMem()" in Nimscript, so "getBacktrace()" will not work in
+# there, but we might still want to import this module with a global
+# "--import:libbacktrace" Nim compiler flag.
+when not defined(nimscript):
+  proc getBacktrace*(): string {.noinline.} =
+    var
+      bt: cstring = get_backtrace_c()
+      btLen = len(bt)
 
-  result = newString(btLen)
-  if btLen > 0:
-    copyMem(addr(result[0]), bt, btLen)
-  c_free(bt)
+    result = newString(btLen)
+    if btLen > 0:
+      copyMem(addr(result[0]), bt, btLen)
+    c_free(bt)
 
-when defined(nimStackTraceOverride):
-  registerStackTraceOverride(getBacktrace)
+  when defined(nimStackTraceOverride):
+    registerStackTraceOverride(getBacktrace)
 
