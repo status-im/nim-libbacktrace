@@ -131,8 +131,9 @@ endif # USE_VENDORED_LIBUNWIND
 
 # DESTDIR does not work on Windows for a CMake-generated Makefile
 $(LIBDIR)/libunwind.a:
-	+ echo -e $(BUILD_MSG) "$@" && \
-	cd vendor/libunwind && \
+	+ echo -e $(BUILD_MSG) "$@"; \
+		which cmake &>/dev/null || { echo "CMake not installed. Aborting."; exit 1; }; \
+		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		cmake -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
 			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" $(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
