@@ -11,8 +11,11 @@ import libbacktrace
 proc f3(i: int): int =
   echo "getBacktrace():"
   echo getBacktrace()
+
   echo "writeStackTrace():"
   writeStackTrace()
+  stderr.flushFile()
+
   echo "\ngetBacktrace():"
   echo getBacktrace()
   return i + 4
