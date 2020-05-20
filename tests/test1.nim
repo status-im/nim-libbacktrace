@@ -11,10 +11,16 @@ import libbacktrace
 proc f3(i: int): int =
   echo "getBacktrace():"
   echo getBacktrace()
+  stderr.flushFile()
+
   echo "writeStackTrace():"
   writeStackTrace()
+  stderr.flushFile()
+
   echo "\ngetBacktrace():"
   echo getBacktrace()
+  stderr.flushFile()
+
   return i + 4
 
 proc f2(i: int): int =
