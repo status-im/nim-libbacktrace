@@ -10,34 +10,34 @@
 # and users need to import it, even if they don't call getBacktrace() manually).
 {.used.}
 
-import libbacktrace_wrapper, os, system/ansi_c
-
-const installPath = currentSourcePath.parentDir() / "install" / "usr"
-
-{.passc: "-I" & currentSourcePath.parentDir().}
-
-when defined(cpp):
-  {.passl: installPath / "lib" / "libbacktracenimcpp.a".}
-else:
-  {.passl: installPath / "lib" / "libbacktracenim.a".}
-
-when defined(libbacktraceUseSystemLibs):
-  {.passl: "-lbacktrace".}
-  when defined(macosx) or defined(windows):
-    {.passl: "-lunwind".}
-else:
-  {.passc: "-I" & installPath / "include".}
-  {.passl: installPath / "lib" / "libbacktrace.a".}
-  when defined(macosx) or defined(windows):
-    {.passl: installPath / "lib" / "libunwind.a".}
-
-when defined(windows):
-  {.passl: "-lpsapi".}
-
 # There is no "copyMem()" in Nimscript, so "getBacktrace()" will not work in
 # there, but we might still want to import this module with a global
 # "--import:libbacktrace" Nim compiler flag.
-when not defined(nimscript):
+when not (defined(nimscript) or defined(js)):
+  import libbacktrace_wrapper, os, system/ansi_c
+
+  const installPath = currentSourcePath.parentDir() / "install" / "usr"
+
+  {.passc: "-I" & currentSourcePath.parentDir().}
+
+  when defined(cpp):
+    {.passl: installPath / "lib" / "libbacktracenimcpp.a".}
+  else:
+    {.passl: installPath / "lib" / "libbacktracenim.a".}
+
+  when defined(libbacktraceUseSystemLibs):
+    {.passl: "-lbacktrace".}
+    when defined(macosx) or defined(windows):
+      {.passl: "-lunwind".}
+  else:
+    {.passc: "-I" & installPath / "include".}
+    {.passl: installPath / "lib" / "libbacktrace.a".}
+    when defined(macosx) or defined(windows):
+      {.passl: installPath / "lib" / "libunwind.a".}
+
+  when defined(windows):
+    {.passl: "-lpsapi".}
+
   proc getBacktrace*(): string {.noinline.} =
     var
       bt: cstring = get_backtrace_c()
