@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Status Research & Development GmbH. Licensed under
+# Copyright (c) 2019-2020 Status Research & Development GmbH. Licensed under
 # either of:
 # - Apache License, version 2.0
 # - MIT license
@@ -7,7 +7,7 @@
 
 SHELL := bash # the shell used internally by Make
 
-NIM_PARAMS := -f --outdir:build --skipParentCfg:on $(NIMFLAGS)
+NIM_PARAMS := -f --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
 BUILD_MSG := "\\e[92mBuilding:\\e[39m"
 
 # verbosity level
@@ -16,7 +16,7 @@ NIM_PARAMS := $(NIM_PARAMS) --verbosity:$(V)
 HANDLE_OUTPUT :=
 SILENT_TARGET_PREFIX := disabled
 ifeq ($(V), 0)
-  NIM_PARAMS := $(NIM_PARAMS) --hints:off --warnings:off
+  NIM_PARAMS := $(NIM_PARAMS) --hints:off
   HANDLE_OUTPUT := &>/dev/null
   SILENT_TARGET_PREFIX :=
 endif
@@ -38,9 +38,13 @@ AR := ar
 CC := gcc
 CXX := g++
 
-TESTS := test1
+TESTS := test1 \
+	test2
 
-.PHONY: all clean test $(TESTS)
+.PHONY: all \
+	clean \
+	test \
+	$(TESTS)
 
 ifeq ($(USE_SYSTEM_LIBS), 0)
 LIBBACKTRACE_DEP := $(LIBDIR)/libbacktrace.a
@@ -149,6 +153,7 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:debug tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 ifeq ($(BUILD_CXX_LIB), 1)
 	# one for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)

@@ -81,6 +81,32 @@ usually with `-d:release` - your stack trace might be incomplete.
 
 If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-calls"`.
 
+### Two-step backtraces
+
+When you store backtraces in re-raised exceptions, you won't need to print them
+most of the time, so it makes sense to delay the expensive part of debugging
+info collection until it's actually needed:
+
+```nim
+let maxLength: cint = 128
+
+# Unwind the stack and get a seq of program counters - the fast step:
+let programCounters = getProgramCounters(maxLength)
+
+# Later on, when you need to print these backtraces, get the debugging
+# info - the relatively slow step:
+let entries = getDebuggingInfo(programCounters, maxLength)
+```
+
+If you have multiple backtraces - and yo do with a re-raised exception - you
+should pass subsets of program counters representing complete stack traces to
+`getDebuggingInfo()`, because there's some logic inside it that keeps track of
+certain inlined functions in order to change the output
+
+You may get more StackTraceEntry objects than the program counters you passed
+to `getDebuggingInfo()`, when you have inlined functions and the debugging
+format knows about them (DWARF does).
+
 ### Debugging
 
 `export NIM_LIBBACKTRACE_DEBUG=1` to see the trace lines hidden by default.

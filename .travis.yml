@@ -21,10 +21,10 @@ matrix:
 
 install:
   - curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-  - env MAKE="make -j2" bash build_nim.sh Nim csources dist/nimble NimBinaries
+  - env MAKE="make -j${NPROC}" bash build_nim.sh Nim csources dist/nimble NimBinaries
   - export PATH=$PWD/Nim/bin:$PATH
 
 script:
   - set -e # fail fast
-  - make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" test
+  - make NIMFLAGS="--parallelBuild:${NPROC}" test
 
