@@ -155,8 +155,9 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 ifeq ($(BUILD_CXX_LIB), 1)
-	# one for the C++ backend:
+	# for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 endif
 
 clean:
