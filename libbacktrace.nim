@@ -6,6 +6,9 @@
 # This file may not be copied, modified, or distributed except according to
 # those terms.
 
+when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
+  import system/stacktraces
+
 # Don't warn that this module is unused (e.g.: when the Nim compiler supports it
 # and users need to import it, even if they don't call getBacktrace() manually).
 {.used.}
