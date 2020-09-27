@@ -1,10 +1,10 @@
-[submodule "vendor/libbacktrace"]
-	path = vendor/libbacktrace
-	url = https://github.com/status-im/libbacktrace.git
-	ignore = dirty
-	branch = master
 [submodule "vendor/whereami"]
 	path = vendor/whereami
 	url = https://github.com/gpakosz/whereami.git
+	ignore = dirty
+	branch = master
+[submodule "vendor/libbacktrace-upstream"]
+	path = vendor/libbacktrace-upstream
+	url = https://github.com/ianlancetaylor/libbacktrace.git
 	ignore = dirty
 	branch = master
