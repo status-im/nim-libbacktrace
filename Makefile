@@ -128,7 +128,7 @@ export CXXFLAGS
 $(LIBDIR)/libbacktrace.a:
 endif # USE_VENDORED_LIBUNWIND
 	echo -e $(BUILD_MSG) "$@" && \
-	cd vendor/libbacktrace && \
+	cd vendor/libbacktrace-upstream && \
 		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static --with-pic MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
@@ -154,6 +154,11 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+ifeq ($(shell uname), Darwin)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
+else
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
+endif
 ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
@@ -162,7 +167,7 @@ endif
 
 clean:
 	rm -rf install build *.o
-	cd vendor/libbacktrace && \
+	cd vendor/libbacktrace-upstream && \
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
 
 $(SILENT_TARGET_PREFIX).SILENT:
