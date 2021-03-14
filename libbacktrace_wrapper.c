@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Status Research & Development GmbH
+ * Copyright (c) 2019-2021 Status Research & Development GmbH
  * Licensed under either of
  *  * Apache License, version 2.0,
  *  * MIT license
