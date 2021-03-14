@@ -162,10 +162,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		if (cb_data->next_index == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
 
-		if (debug)
-			return 0; // Keep going.
-		else
-			return 1; // Stop bulding the backtrace.
+    // see https://github.com/status-im/nim-libbacktrace/issues/9, we need to keep going here.
+		return 0;
 	}
 
 	char *demangled_function = demangle(function);
