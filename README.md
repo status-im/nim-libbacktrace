@@ -59,25 +59,13 @@ We need debugging symbols in the binary and we can do without Nim's bloated and
 slow stack trace implementation:
 
 ```bash
-nim c -f --debugger:native --stacktrace:off bttest.nim
-```
-
-If you're unfortunate enough to need this on macOS, [there's an extra
-step](https://github.com/nim-lang/Nim/issues/12735) for creating debugging
-symbols:
-
-```bash
-dsymutil bttest
-```
-
-Now you can run it:
-
-```bash
-./bttest
+# `-f` needed if you've changed nim-libbacktrace
+# just use `c` if you're just compiling
+nim r --debugger:native --stacktrace:off bttest.nim
 ```
 
 When the C compiler inlines some functions, or does tail-call optimisation -
-usually with `-d:release` - your stack trace might be incomplete.
+usually with `-d:release` or `-d:danger` - your stack trace might be incomplete.
 
 If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-calls"`.
 
