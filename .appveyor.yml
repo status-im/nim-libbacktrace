@@ -21,8 +21,9 @@ install:
   - IF "%PLATFORM%" == "x86" SET PATH=C:\mingw-w64\i686-6.3.0-posix-dwarf-rt_v5-rev1\mingw32\bin;%PATH%
   - IF "%PLATFORM%" == "x64" SET PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
 
+  - git clone -b version-1-4 --depth 1 git://github.com/nim-lang/nim nim/
   - curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-  - env MAKE="mingw32-make -j2" ARCH_OVERRIDE=%PLATFORM% bash build_nim.sh Nim csources dist/nimble NimBinaries
+  - env MAKE="mingw32-make -j2" ARCH_OVERRIDE=%PLATFORM% QUICK_AND_DIRTY_COMPILER=1 bash build_nim.sh Nim csources dist/nimble NimBinaries
   - SET PATH=%CD%\Nim\bin;%PATH%
 
   # ./configure can't figure out the "MSYS_NT-6.3" platform with old autoconf files
