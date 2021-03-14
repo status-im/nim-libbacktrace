@@ -121,15 +121,19 @@ export CXXFLAGS += $(CPPFLAGS)
 #- this library doesn't support parallel builds, hence the "-j1"
 #- the "Git for Windows" Bash is usually installed in a path with spaces, which messes up the Makefile. Add quotes.
 $(LIBDIR)/libbacktrace.a: $(LIBDIR)/libunwind.a
-else
+else # USE_VENDORED_LIBUNWIND
 export CFLAGS
 export CXXFLAGS
-
-$(LIBDIR)/libbacktrace.a:
 endif # USE_VENDORED_LIBUNWIND
-	echo -e $(BUILD_MSG) "$@" && \
-	cd vendor/libbacktrace-upstream && \
-		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static --with-pic MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
+
+# We need to enable cross-compilation here, by passing "--build" and "--host"
+# to "./configure". We already set CC in the environment, so it doesn't matter
+# what the target host is, as long as it's a valid one.
+$(LIBDIR)/libbacktrace.a:
+	+ echo -e $(BUILD_MSG) "$@" && \
+		cd vendor/libbacktrace-upstream && \
+		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static \
+			--with-pic --build=$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
 
@@ -140,7 +144,8 @@ $(LIBDIR)/libunwind.a:
 		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		cmake -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
-			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" $(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
+			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
+			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
 		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
 		cp -a include "$(CURDIR)/install/usr/"
 
