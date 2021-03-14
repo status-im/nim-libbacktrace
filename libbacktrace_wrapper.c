@@ -162,7 +162,7 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		if (cb_data->next_index == 0)
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
 
-    // see https://github.com/status-im/nim-libbacktrace/issues/9, we need to keep going here.
+		// see https://github.com/status-im/nim-libbacktrace/issues/9, we need to keep going here.
 		return 0;
 	}
 
