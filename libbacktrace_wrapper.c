@@ -74,6 +74,7 @@ struct callback_data {
 	int next_index;
 	int max_length;
 	int nim_main_module_seen; // Did we already see NimMainModule?
+	int missing_debugging_symbols_error_shown;
 };
 
 struct simple_callback_data {
@@ -159,8 +160,10 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 		return 1; // Stop building the backtrace.
 
 	if (function == NULL || filename == NULL) {
-		if (cb_data->next_index == 0)
+		if (cb_data->missing_debugging_symbols_error_shown == 0) {
 			fprintf(stderr, "libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n");
+			cb_data->missing_debugging_symbols_error_shown = 1;
+		}
 
 		// see https://github.com/status-im/nim-libbacktrace/issues/9, we need to keep going here.
 		return 0;
@@ -170,7 +173,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 
 	// skip internal Nim functions
 	if ((strings_equal(demangled_function, "NimMainInner") ||
-			strings_equal(demangled_function, "NimMain")) &&
+			strings_equal(demangled_function, "NimMain") ||
+			strings_equal(demangled_function, "main")) &&
 				cb_data->nim_main_module_seen) {
 		/*
 		 * If we skip them unconditionally, we may end up with an empty
