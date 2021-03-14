@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 Status Research & Development GmbH
+# Copyright (c) 2019-2021 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -11,7 +11,8 @@
 
 when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
   import system/stacktraces
-else:
+
+when not declared(cuintptr_t):
   # There is a disparity on macOS where Nim's `uint` is `unsigned long long` and
   # `uintptr_t` is `unsigned long`. Even though both data types are the same
   # size (64 bits), clang++ refuses to do automatic conversion between them.
