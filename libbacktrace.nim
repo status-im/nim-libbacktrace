@@ -1,10 +1,14 @@
-# Copyright (c) 2019-2020 Status Research & Development GmbH
+# Copyright (c) 2019-2021 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
 # at your option.
 # This file may not be copied, modified, or distributed except according to
 # those terms.
+
+when not compileOption("debuginfo"):
+  stderr.write("libbacktrace error: no debugging symbols available. Compile with '--debugger:native'.\n")
+  stderr.flushFile()
 
 when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
   import system/stacktraces
