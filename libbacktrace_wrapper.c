@@ -112,6 +112,16 @@ static int strings_equal(const char *str1, const char *str2)
 	}
 }
 
+static int string_starts_with(const char *str1, const char *str2)
+{
+	if (!str1 || !str2) {
+		return 0;
+	} else {
+		size_t len2 = strlen(str2);
+		return strlen(str1) >= len2 && strncmp(str1, str2, len2) == 0;
+	}
+}
+
 #ifdef __cplusplus
 # include <cxxabi.h>
 #endif // __cplusplus
@@ -186,7 +196,7 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 			strings_equal(demangled_function, "rawWriteStackTrace") ||
 			strings_equal(demangled_function, "writeStackTrace") ||
 			strings_equal(demangled_function, "raiseExceptionAux") ||
-			strings_equal(demangled_function, "raiseExceptionEx")) {
+			string_starts_with(demangled_function, "raiseExceptionEx")) {
 		if (!debug) {
 			xfree(demangled_function);
 			return 0; // Skip it, but continue the backtrace.
