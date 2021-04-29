@@ -157,12 +157,15 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native --stackTrace:off tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:debug tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 ifeq ($(shell uname), Darwin)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
 else
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
 endif
 ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
@@ -173,6 +176,8 @@ endif
 clean:
 	rm -rf install build *.o
 	cd vendor/libbacktrace-upstream && \
+		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
+	cd vendor/libunwind && \
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
 
 $(SILENT_TARGET_PREFIX).SILENT:
