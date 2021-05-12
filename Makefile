@@ -9,6 +9,7 @@ SHELL := bash # the shell used internally by Make
 
 NIM_PARAMS := -f --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
 BUILD_MSG := "\\e[92mBuilding:\\e[39m"
+CMAKE := cmake
 
 # verbosity level
 V := 0
@@ -140,10 +141,10 @@ $(LIBDIR)/libbacktrace.a:
 # DESTDIR does not work on Windows for a CMake-generated Makefile
 $(LIBDIR)/libunwind.a:
 	+ echo -e $(BUILD_MSG) "$@"; \
-		which cmake &>/dev/null || { echo "CMake not installed. Aborting."; exit 1; }; \
+		which $(CMAKE) &>/dev/null || { echo "CMake not installed. Aborting."; exit 1; }; \
 		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
-		cmake -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
+		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
 			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
 			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
 		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
