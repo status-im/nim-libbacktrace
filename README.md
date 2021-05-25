@@ -54,14 +54,25 @@ echo getBacktrace()
 # Should be the same output as writeStackTrace() - minus the header.
 ```
 
-
 We need debugging symbols in the binary and we can do without Nim's bloated and
 slow stack trace implementation:
 
 ```bash
 # `-f` needed if you've changed nim-libbacktrace
-# just use `c` if you're just compiling
-nim r --debugger:native --stacktrace:off bttest.nim
+nim c -r --debugger:native --stacktrace:off bttest.nim
+```
+
+By default, the Nim compiler passes "-g3" to the C compiler, with
+"--debugger:native", which almost doubles the resulting binary's size (only on
+disk, not in memory). If we don't need to use GDB on that binary, we can get
+away with significantly fewer debugging symbols by switching to "-g1":
+
+```bash
+# for the C backend
+nim c --debugger:native --gcc.options.debug:'-g1' --stacktrace:off -d:release somefile.nim
+
+# for the C++ backend
+nim cpp --debugger:native --gcc.cpp.options.debug:'-g1' --stacktrace:off -d:release somefile.nim
 ```
 
 When the C compiler inlines some functions, or does tail-call optimisation -

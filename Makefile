@@ -161,6 +161,7 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --gcc.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 ifeq ($(shell uname), Darwin)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
@@ -172,6 +173,7 @@ ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 endif
 
 clean:
