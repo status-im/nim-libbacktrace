@@ -10,6 +10,7 @@ SHELL := bash # the shell used internally by Make
 NIM_PARAMS := -f --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
 BUILD_MSG := "\\e[92mBuilding:\\e[39m"
 CMAKE := cmake
+CMAKE_MISSING_MSG := "CMake not installed. Aborting."
 
 # verbosity level
 V := 0
@@ -88,6 +89,7 @@ ifeq ($(shell uname), Darwin)
 MACOS_DEBUG_SYMBOLS = && dsymutil build/$@
 
 BUILD_MSG := "Building:"
+CMAKE_MISSING_MSG := "CMake not installed. Please run 'brew install cmake'. Aborting."
 
 #- macOS Clang needs the LLVM libunwind variant
 #  (GCC comes with its own, in libgcc_s.so.1, used even by Clang itself, on other platforms)
@@ -141,7 +143,7 @@ $(LIBDIR)/libbacktrace.a:
 # DESTDIR does not work on Windows for a CMake-generated Makefile
 $(LIBDIR)/libunwind.a:
 	+ echo -e $(BUILD_MSG) "$@"; \
-		which $(CMAKE) &>/dev/null || { echo "CMake not installed. Aborting."; exit 1; }; \
+		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
 		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
