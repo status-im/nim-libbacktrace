@@ -8,7 +8,7 @@
 SHELL := bash # the shell used internally by Make
 
 NIM_PARAMS := -f --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
-BUILD_MSG := "\\e[92mBuilding:\\e[39m"
+BUILD_MSG := "\\x1B[92mBuilding:\\x1B[39m"
 CMAKE := cmake
 CMAKE_MISSING_MSG := "CMake not installed. Aborting."
 
