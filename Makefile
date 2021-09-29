@@ -158,24 +158,25 @@ $(TESTS): all
 	$(eval CMD := nim c $(NIM_PARAMS) tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native --stackTrace:off tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:debug tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --gcc.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	# parameter order matters for Nim-1.4 and up: https://github.com/nim-lang/Nim/issues/18921
+	$(eval CMD := nim c $(NIM_PARAMS) -d:debug --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:danger --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:danger --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --gcc.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 ifeq ($(shell uname), Darwin)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
 else
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
 endif
 ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim cpp $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim cpp $(NIM_PARAMS) -d:release --debugger:native --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 endif
 
 clean:

@@ -69,13 +69,13 @@ away with significantly fewer debugging symbols by switching to "-g1":
 
 ```bash
 # for the C backend
-nim c --debugger:native --gcc.options.debug:'-g1' -d:release somefile.nim
+nim c -d:release --debugger:native --gcc.options.debug:'-g1' somefile.nim
 
 # for the C++ backend
-nim cpp --debugger:native --gcc.cpp.options.debug:'-g1' -d:release somefile.nim
+nim cpp -d:release --debugger:native --gcc.cpp.options.debug:'-g1' somefile.nim
 
 # Clang needs a different argument
-nim c --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' -d:release somefile.nim
+nim c --cc:clang -d:release --debugger:native --clang.options.debug:'-gline-tables-only' somefile.nim
 ```
 
 When the C compiler inlines some functions, or does tail-call optimisation -
