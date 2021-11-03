@@ -129,7 +129,7 @@ jobs:
       - name: Build the Nim compiler
         run: |
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-          env MAKE="${MAKE_CMD} -j${ncpu}" ARCH_OVERRIDE=${PLATFORM} QUICK_AND_DIRTY_COMPILER=1 CC=gcc NIM_COMMIT=${{ matrix.branch }} bash build_nim.sh nim csources dist/nimble NimBinaries
+          env MAKE="${MAKE_CMD} -j${ncpu}" ARCH_OVERRIDE=${PLATFORM} QUICK_AND_DIRTY_COMPILER=1 V=1 CC=gcc NIM_COMMIT=${{ matrix.branch }} bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Run tests
