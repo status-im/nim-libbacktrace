@@ -136,7 +136,8 @@ endif # USE_VENDORED_LIBUNWIND
 # to "./configure". We already set CC in the environment, so it doesn't matter
 # what the target host is, as long as it's a valid one.
 $(LIBDIR)/libbacktrace.a:
-	+ echo -e $(BUILD_MSG) "$@" && \
+	+ echo -e $(BUILD_MSG) "$@"; \
+		mkdir -p "$(CURDIR)/install/usr"; \
 		cd vendor/libbacktrace-upstream && \
 		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static \
 			--with-pic --build=$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
@@ -147,6 +148,7 @@ $(LIBDIR)/libbacktrace.a:
 $(LIBDIR)/libunwind.a:
 	+ echo -e $(BUILD_MSG) "$@"; \
 		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
+		mkdir -p "$(CURDIR)/install/usr"; \
 		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
