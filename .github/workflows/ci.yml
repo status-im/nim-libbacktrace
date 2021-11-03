@@ -28,7 +28,7 @@ jobs:
             shell: bash
           - target:
               os: macos
-            builder: macos-10.15
+            builder: macos-11
             shell: bash
           - target:
               os: windows
@@ -159,5 +159,6 @@ jobs:
       - name: Run tests
         run: |
           nim --version
-          make -j ${ncpu} V=1 test
+          #make -j ${ncpu} test
+          make V=1 test
 
