@@ -160,5 +160,5 @@ jobs:
         run: |
           nim --version
           #make -j ${ncpu} test
-          make V=1 test
+          mingw32-make V=1 test
 
