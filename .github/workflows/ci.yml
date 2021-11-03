@@ -51,13 +51,10 @@ jobs:
         shell: bash
         run: |
           if [[ '${{ matrix.target.cpu }}' == 'amd64' ]]; then
-            ARCH=64
             PLATFORM=x64
           else
-            ARCH=32
             PLATFORM=x86
           fi
-          echo "ARCH=$ARCH" >> $GITHUB_ENV
           echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
 
           if [[ '${{ matrix.target.os }}' == 'windows' ]]; then
@@ -81,6 +78,26 @@ jobs:
           esac
           [[ -z "$ncpu" || $ncpu -le 0 ]] && ncpu=1
           echo "ncpu=$ncpu" >> $GITHUB_ENV
+
+      - name: Install build dependencies (Linux i386)
+        if: runner.os == 'Linux' && matrix.target.cpu == 'i386'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
+            --no-install-recommends -yq gcc-multilib g++-multilib \
+            libssl-dev:i386 libpcre3-dev:i386
+          mkdir -p external/bin
+          cat << EOF > external/bin/gcc
+          #!/bin/bash
+          exec $(which gcc) -m32 -mno-adx "\$@"
+          EOF
+          cat << EOF > external/bin/g++
+          #!/bin/bash
+          exec $(which g++) -m32 -mno-adx "\$@"
+          EOF
+          chmod 755 external/bin/gcc external/bin/g++
+          echo "${{ github.workspace }}/external/bin" >> $GITHUB_PATH
 
       - name: MSYS2 (Windows i386)
         if: runner.os == 'Windows' && matrix.target.cpu == 'i386'
@@ -129,8 +146,15 @@ jobs:
       - name: Build the Nim compiler
         run: |
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-          env MAKE="${MAKE_CMD} -j${ncpu}" ARCH_OVERRIDE=${PLATFORM} QUICK_AND_DIRTY_COMPILER=1 V=1 CC=gcc NIM_COMMIT=${{ matrix.branch }} bash build_nim.sh nim csources dist/nimble NimBinaries
+          env MAKE="${MAKE_CMD} -j${ncpu}" ARCH_OVERRIDE=${PLATFORM} QUICK_AND_DIRTY_COMPILER=1 CC=gcc NIM_COMMIT=${{ matrix.branch }} bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+
+      - name: Update config files (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # ./configure can't figure out the "MSYS_NT-6.3" platform with old autoconf files
+          curl -o vendor/libbacktrace-upstream/config.guess -L -s -S "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
+          curl -o vendor/libbacktrace-upstream/config.sub -L -s -S "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD"
 
       - name: Run tests
         run: |
