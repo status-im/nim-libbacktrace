@@ -155,7 +155,7 @@ $(LIBDIR)/libunwind.a:
 			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
 			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
 		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
-		cp -a include "$(CURDIR)/install/usr/"
+		cp -a include "$(CURDIR)/install/usr/" && ls -lR "$(CURDIR)/install/usr/"
 
 test: $(TESTS)
 
