@@ -44,6 +44,8 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
+        with:
+          submodules: true
 
       - name: Derive environment variables
         shell: bash
@@ -133,5 +135,5 @@ jobs:
       - name: Run tests
         run: |
           nim --version
-          make -j ${ncpu} V=1 test
+          make -j ${ncpu} test
 
