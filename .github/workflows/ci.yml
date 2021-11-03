@@ -133,5 +133,5 @@ jobs:
       - name: Run tests
         run: |
           nim --version
-          make -j ${ncpu} test
+          make -j ${ncpu} V=1 test
 
