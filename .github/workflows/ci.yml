@@ -159,6 +159,6 @@ jobs:
       - name: Run tests
         run: |
           nim --version
-          #make -j ${ncpu} test
-          mingw32-make V=1 test
+          ${MAKE_CMD} -j ${ncpu}
+          ${MAKE_CMD} test
 
