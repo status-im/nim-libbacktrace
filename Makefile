@@ -29,9 +29,12 @@ ifneq ($(USE_SYSTEM_LIBS), 0)
 endif
 
 ECHO_AND_RUN = echo -e "\n$(CMD)\n"; $(CMD) $(MACOS_DEBUG_SYMBOLS) && ./build/$@ 2>&1 | tee $@_out.txt
-CHECK_NOT_SUPPORTED = tests/not_supported.sh $@_out.txt
-CHECK_SUPPORTED_NOT_ENABLED = tests/supported_not_enabled.sh $@_out.txt
-CHECK_SUPPORTED_AND_ENABLED = tests/supported_and_enabled.sh $@_out.txt
+CHECK_NOT_SUPPORTED_CMD = tests/not_supported.sh $@_out.txt
+CHECK_NOT_SUPPORTED = { echo "$(CHECK_NOT_SUPPORTED_CMD)"; $(CHECK_NOT_SUPPORTED_CMD); }
+CHECK_SUPPORTED_NOT_ENABLED_CMD = tests/supported_not_enabled.sh $@_out.txt
+CHECK_SUPPORTED_NOT_ENABLED = { echo "$(CHECK_SUPPORTED_NOT_ENABLED_CMD)"; $(CHECK_SUPPORTED_NOT_ENABLED_CMD); }
+CHECK_SUPPORTED_AND_ENABLED_CMD = tests/supported_and_enabled.sh $@_out.txt
+CHECK_SUPPORTED_AND_ENABLED = { echo "$(CHECK_SUPPORTED_AND_ENABLED_CMD)"; $(CHECK_SUPPORTED_AND_ENABLED_CMD); }
 LIBDIR := install/usr/lib
 INCLUDEDIR := install/usr/include
 CFLAGS += -g -O3 -std=gnu11 -pipe -Wall -Wextra -fPIC
@@ -140,7 +143,7 @@ $(LIBDIR)/libbacktrace.a:
 		mkdir -p "$(CURDIR)/install/usr"; \
 		cd vendor/libbacktrace-upstream && \
 		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static \
-			--with-pic --build=$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
+			--with-pic --build=$$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
 
