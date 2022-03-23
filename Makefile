@@ -183,7 +183,8 @@ clean:
 	cd vendor/libbacktrace-upstream && \
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
 	cd vendor/libunwind && \
-		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
+		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; } && \
+		rm -rf CMakeCache.txt CMakeFiles cmake_install.cmake install_manifest.txt Makefile
 
 $(SILENT_TARGET_PREFIX).SILENT:
 
