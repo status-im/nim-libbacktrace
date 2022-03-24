@@ -11,6 +11,9 @@ overhead, by adding `nimln_()`, `nimfr_()` calls all over the place. The
 problem is being discussed upstream in [this GitHub
 issue](https://github.com/nim-lang/Nim/issues/12702).
 
+In practice, you can get as much as 66% improved performance by disabling the
+default stack tracing: https://github.com/status-im/nimbus-eth2/pull/3466
+
 That `popFrame()` at the end of each C function is particularly problematic,
 since it prevents the C compiler from doing tail-call optimisations.
 
