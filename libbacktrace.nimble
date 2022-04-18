@@ -14,7 +14,7 @@ author        = "Status Research & Development GmbH"
 description   = "Nim wrapper for libbacktrace"
 license       = "MIT or Apache License 2.0"
 installDirs   = @["vendor/whereami/src", "install"]
-installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libbacktrace_wrapper.h", "libbacktrace_wrapper.nim"]
+installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libbacktrace_wrapper.h", "libbacktrace/wrapper.nim"]
 
 requires "nim >= 1.0"
 
@@ -24,4 +24,3 @@ before install:
   when defined(windows):
     make = "mingw32-make"
   exec make
-
