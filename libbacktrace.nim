@@ -21,7 +21,7 @@ when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
 # there, but we might still want to import this module with a global
 # "--import:libbacktrace" Nim compiler flag.
 when not (defined(nimscript) or defined(js)):
-  import algorithm, libbacktrace_wrapper, os, system/ansi_c, strutils
+  import algorithm, libbacktrace/wrapper, os, system/ansi_c, strutils
 
   const
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
@@ -118,4 +118,3 @@ when not (defined(nimscript) or defined(js)):
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetDebuggingInfo):
     registerStackTraceOverrideGetDebuggingInfo(getDebuggingInfo)
-
