@@ -11,3 +11,5 @@ nimcache
 *.exe
 *.dll
 
+nimble.develop
+nimble.paths
