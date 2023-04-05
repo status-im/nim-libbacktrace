@@ -59,7 +59,7 @@ when not (defined(nimscript) or defined(js)):
     c_free(bt)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverride):
-    registerStackTraceOverride(getBacktrace)
+    registerStackTraceOverride(libbacktrace.getBacktrace)
 
   proc getProgramCounters*(maxLength: cint): seq[cuintptr_t] {.noinline.} =
     result = newSeqOfCap[cuintptr_t](maxLength)
@@ -75,7 +75,7 @@ when not (defined(nimscript) or defined(js)):
     c_free(pcPtr)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetProgramCounters):
-    registerStackTraceOverrideGetProgramCounters(getProgramCounters)
+    registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
 
   proc getDebuggingInfo*(programCounters: seq[cuintptr_t], maxLength: cint): seq[StackTraceEntry] {.noinline.} =
     result = newSeqOfCap[StackTraceEntry](maxLength)
@@ -117,4 +117,4 @@ when not (defined(nimscript) or defined(js)):
     reverse(result)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetDebuggingInfo):
-    registerStackTraceOverrideGetDebuggingInfo(getDebuggingInfo)
+    registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)
