@@ -28,7 +28,13 @@ ifneq ($(USE_SYSTEM_LIBS), 0)
   NIM_PARAMS := $(NIM_PARAMS) -d:libbacktraceUseSystemLibs
 endif
 
-ECHO_AND_RUN = echo -e "\n$(CMD)\n"; $(CMD) $(MACOS_DEBUG_SYMBOLS) && ./build/$@
+ECHO_AND_RUN = echo -e "\n$(CMD)\n"; $(CMD) $(MACOS_DEBUG_SYMBOLS) && ./build/$@ 2>&1 | tee $@_out.txt
+CHECK_NOT_SUPPORTED_CMD = tests/not_supported.sh $@_out.txt
+CHECK_NOT_SUPPORTED = { echo "$(CHECK_NOT_SUPPORTED_CMD)"; $(CHECK_NOT_SUPPORTED_CMD); }
+CHECK_SUPPORTED_NOT_ENABLED_CMD = tests/supported_not_enabled.sh $@_out.txt
+CHECK_SUPPORTED_NOT_ENABLED = { echo "$(CHECK_SUPPORTED_NOT_ENABLED_CMD)"; $(CHECK_SUPPORTED_NOT_ENABLED_CMD); }
+CHECK_SUPPORTED_AND_ENABLED_CMD = tests/supported_and_enabled.sh $@_out.txt
+CHECK_SUPPORTED_AND_ENABLED = { echo "$(CHECK_SUPPORTED_AND_ENABLED_CMD)"; $(CHECK_SUPPORTED_AND_ENABLED_CMD); }
 LIBDIR := install/usr/lib
 INCLUDEDIR := install/usr/include
 CFLAGS += -g -O3 -std=gnu11 -pipe -Wall -Wextra -fPIC
@@ -133,10 +139,11 @@ endif # USE_VENDORED_LIBUNWIND
 # to "./configure". We already set CC in the environment, so it doesn't matter
 # what the target host is, as long as it's a valid one.
 $(LIBDIR)/libbacktrace.a:
-	+ echo -e $(BUILD_MSG) "$@" && \
+	+ echo -e $(BUILD_MSG) "$@"; \
+		mkdir -p "$(CURDIR)/install/usr"; \
 		cd vendor/libbacktrace-upstream && \
 		./configure --prefix="/usr" --libdir="/usr/lib" --disable-shared --enable-static \
-			--with-pic --build=$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
+			--with-pic --build=$$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
 
@@ -144,38 +151,40 @@ $(LIBDIR)/libbacktrace.a:
 $(LIBDIR)/libunwind.a:
 	+ echo -e $(BUILD_MSG) "$@"; \
 		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
+		mkdir -p "$(CURDIR)/install/usr"; \
 		cd vendor/libunwind && \
 		rm -f CMakeCache.txt && \
 		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
 			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
 			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
 		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
-		cp -a include "$(CURDIR)/install/usr/"
+		cp -a include "$(CURDIR)/install/usr/" && ls -lR "$(CURDIR)/install/usr/"
 
 test: $(TESTS)
 
 $(TESTS): all
-	$(eval CMD := nim c $(NIM_PARAMS) tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native --stackTrace:off tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:debug tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:danger -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --gcc.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_NOT_SUPPORTED)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native --stackTrace:off tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	# parameter order matters for Nim-1.4 and up: https://github.com/nim-lang/Nim/issues/18921
+	$(eval CMD := nim c $(NIM_PARAMS) -d:debug --debugger:native tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:danger --debugger:native tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:danger --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --gcc.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
 ifeq ($(shell uname), Darwin)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride --passC:-flto=thin --passL:"-flto=thin -Wl,-object_path_lto,build/$@.lto" tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
 else
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim c $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
 endif
 ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
-	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
+	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_NOT_ENABLED)
+	$(eval CMD := nim cpp $(NIM_PARAMS) -d:release --debugger:native -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
+	$(eval CMD := nim cpp $(NIM_PARAMS) -d:release --debugger:native --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN) && $(CHECK_SUPPORTED_AND_ENABLED)
 endif
 
 clean:
