@@ -162,8 +162,7 @@ jobs:
             bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
-      - name: Run nim-libbacktrace tests
-        working-directory: nim-libbacktrace
+      - name: Run tests
         run: |
           gcc --version
           nim --version

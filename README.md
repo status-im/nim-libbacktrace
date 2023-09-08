@@ -1,7 +1,6 @@
 # All the backtrace, none of the overhead
 
-[![Build Status](https://travis-ci.org/status-im/nim-libbacktrace.svg?branch=master)](https://travis-ci.org/status-im/nim-libbacktrace)
-[![Build status](https://ci.appveyor.com/api/projects/status/mrvu6ks50dl5y5y4/branch/master?svg=true)](https://ci.appveyor.com/project/nimbus/nim-libbacktrace/branch/master)
+![Github action](https://github.com/status-im/nim-libbacktrace/workflows/CI/badge.svg)
 [![License: Apache](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Stability: experimental](https://img.shields.io/badge/stability-experimental-orange.svg)
@@ -72,13 +71,13 @@ away with significantly fewer debugging symbols by switching to "-g1":
 
 ```bash
 # for the C backend
-nim c --debugger:native --gcc.options.debug:'-g1' -d:release somefile.nim
+nim c -d:release --debugger:native --gcc.options.debug:'-g1' somefile.nim
 
 # for the C++ backend
-nim cpp --debugger:native --gcc.cpp.options.debug:'-g1' -d:release somefile.nim
+nim cpp -d:release --debugger:native --gcc.cpp.options.debug:'-g1' somefile.nim
 
 # Clang needs a different argument
-nim c --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' -d:release somefile.nim
+nim c -d:release --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' somefile.nim
 ```
 
 When the C compiler inlines some functions, or does tail-call optimisation -
