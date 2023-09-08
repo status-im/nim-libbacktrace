@@ -37,11 +37,10 @@ jobs:
     name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-(Nim ${{ matrix.branch }})'
     runs-on: ${{ matrix.builder }}
     steps:
-      - name: Checkout nim-libbacktrace
+      - name: Git checkout
         uses: actions/checkout@v3
         with:
-          path: nim-libbacktrace
-          submodules: false
+          submodules: true
 
       - name: Install build dependencies (Linux i386)
         if: runner.os == 'Linux' && matrix.target.cpu == 'i386'
