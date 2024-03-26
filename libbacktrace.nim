@@ -21,28 +21,28 @@ when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
 # there, but we might still want to import this module with a global
 # "--import:libbacktrace" Nim compiler flag.
 when not (defined(nimscript) or defined(js)):
-  import algorithm, libbacktrace/wrapper, os, system/ansi_c, strutils
+  import std/algorithm, libbacktrace/wrapper, std/os, system/ansi_c, std/strutils
 
   const
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
     installPath = topLevelPath & "/install/usr"
 
-  {.passc: "-I\"" & topLevelPath & "\"".}
+  {.passc: "-I" & escape(topLevelPath).}
 
   when defined(cpp):
-    {.passl: "\"" & installPath & "/lib/libbacktracenimcpp.a\"".}
+    {.passl: escape(installPath & "/lib/libbacktracenimcpp.a").}
   else:
-    {.passl: "\"" & installPath & "/lib/libbacktracenim.a\"".}
+    {.passl: escape(installPath & "/lib/libbacktracenim.a").}
 
   when defined(libbacktraceUseSystemLibs):
     {.passl: "-lbacktrace".}
     when defined(macosx) or defined(windows):
       {.passl: "-lunwind".}
   else:
-    {.passc: "-I\"" & installPath & "/include\"".}
-    {.passl: "\"" & installPath & "/lib/libbacktrace.a\"".}
+    {.passc: "-I" & escape(installPath & "/include").}
+    {.passl: escape(installPath & "/lib/libbacktrace.a").}
     when defined(macosx) or defined(windows):
-      {.passl: "\"" & installPath & "/lib/libunwind.a\"".}
+      {.passl: escape(installPath & "/lib/libunwind.a").}
 
   when defined(windows):
     {.passl: "-lpsapi".}
