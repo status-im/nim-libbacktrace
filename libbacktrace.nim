@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 Status Research & Development GmbH
+# Copyright (c) 2019-2024 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -27,22 +27,22 @@ when not (defined(nimscript) or defined(js)):
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
     installPath = topLevelPath & "/install/usr"
 
-  {.passc: "-I" & topLevelPath.}
+  {.passc: "-I\"" & topLevelPath & "\"".}
 
   when defined(cpp):
-    {.passl: installPath & "/lib/libbacktracenimcpp.a".}
+    {.passl: "\"" & installPath & "/lib/libbacktracenimcpp.a\"".}
   else:
-    {.passl: installPath & "/lib/libbacktracenim.a".}
+    {.passl: "\"" & installPath & "/lib/libbacktracenim.a\"".}
 
   when defined(libbacktraceUseSystemLibs):
     {.passl: "-lbacktrace".}
     when defined(macosx) or defined(windows):
       {.passl: "-lunwind".}
   else:
-    {.passc: "-I" & installPath & "/include".}
-    {.passl: installPath & "/lib/libbacktrace.a".}
+    {.passc: "-I\"" & installPath & "/include\"".}
+    {.passl: "\"" & installPath & "/lib/libbacktrace.a\"".}
     when defined(macosx) or defined(windows):
-      {.passl: installPath & "/lib/libunwind.a".}
+      {.passl: "\"" & installPath & "/lib/libunwind.a\"".}
 
   when defined(windows):
     {.passl: "-lpsapi".}
