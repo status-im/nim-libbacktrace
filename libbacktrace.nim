@@ -77,6 +77,22 @@ when not (defined(nimscript) or defined(js)):
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetProgramCounters):
     registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
 
+  proc fixupPath(file: var string) {.inline, raises: [], locks: 0.} =
+    when compileOption("excessivestacktrace"):
+      when defined(libbacktraceWorkaroundRelativePaths):
+        if not file.isAbsolute:
+          # workaround https://github.com/status-im/nim-libbacktrace/issues/11
+          # refs upstream bug https://github.com/ianlancetaylor/libbacktrace/issues/72
+          const dir = getCurrentDir()
+          # this requires --experimental:vmopsDanger
+          # note that `const` is correct here, so that if binary is compiled
+          # from a different dir from where it's run, this stays correct.
+          # pending https://github.com/nim-lang/Nim/issues/8644, we'll have
+          # a way to check whether `--experimental:vmopsDanger` was specified.
+          file = dir / file
+    else:
+      file = file.lastPathPart
+
   proc getDebuggingInfo*(programCounters: seq[cuintptr_t], maxLength: cint): seq[StackTraceEntry] {.noinline.} =
     result = newSeqOfCap[StackTraceEntry](maxLength)
     if programCounters.len == 0:
@@ -94,6 +110,7 @@ when not (defined(nimscript) or defined(js)):
         res.filenameStr = newString(filenameLen)
         if filenameLen > 0:
           copyMem(addr(res.filenameStr[0]), iPtr[].filename, filenameLen)
+        fixupPath(res.filenameStr)
         res.filename = res.filenameStr
 
       res.line = iPtr[].lineno
