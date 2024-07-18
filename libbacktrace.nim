@@ -62,13 +62,15 @@ when not (defined(nimscript) or defined(js)):
     registerStackTraceOverride(libbacktrace.getBacktrace)
 
   proc getProgramCounters*(maxLength: cint): seq[cuintptr_t] {.noinline.} =
-    result = newSeqOfCap[cuintptr_t](maxLength)
-
     var
-      pcPtr = get_program_counters_c(max_length = maxLength, skip = 2)
+      length {.noinit.}: cint
+      pcPtr = get_program_counters_c(maxLength, addr length, skip = 2)
       iPtr = pcPtr
 
-    while iPtr[] != 0:
+    result = newSeqOfCap[cuintptr_t](length)
+    for i in 0 ..< length:
+      if iPtr[] == 0:
+        break
       result.add(iPtr[])
       iPtr = cast[ptr cuintptr_t](cast[uint](iPtr) + sizeof(cuintptr_t).uint)
 
@@ -77,17 +79,27 @@ when not (defined(nimscript) or defined(js)):
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetProgramCounters):
     registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
 
-  proc getDebuggingInfo*(programCounters: seq[cuintptr_t], maxLength: cint): seq[StackTraceEntry] {.noinline.} =
-    result = newSeqOfCap[StackTraceEntry](maxLength)
+  proc getDebuggingInfo*(
+      programCounters: seq[cuintptr_t],
+      maxLength: cint): seq[StackTraceEntry] {.noinline.} =
+    doAssert programCounters.len <= cint.high
+
     if programCounters.len == 0:
-      return
+      return @[]
 
     var
-      functionInfoPtr = get_debugging_info_c(unsafeAddr programCounters[0], maxLength)
+      length {.noinit.}: cint
+      functionInfoPtr = get_debugging_info_c(
+        addr programCounters[0], programCounters.len.cint,
+        maxLength, addr length)
       iPtr = functionInfoPtr
       res: StackTraceEntry
 
-    while iPtr[].filename != nil:
+    result = newSeqOfCap[StackTraceEntry](length.int)
+    for i in 0 ..< length:
+      if iPtr[].filename == nil:
+        break
+
       # Older stdlib doesn't have this field in "StackTraceEntry".
       when compiles(res.filenameStr):
         let filenameLen = len(iPtr[].filename)
@@ -105,11 +117,12 @@ when not (defined(nimscript) or defined(js)):
           copyMem(addr(res.procnameStr[0]), iPtr[].function, functionLen)
         res.procname = res.procnameStr
 
+      result.add(res)
+
       c_free(iPtr[].filename)
       c_free(iPtr[].function)
-
-      iPtr = cast[ptr DebuggingInfo](cast[uint](iPtr) + sizeof(DebuggingInfo).uint)
-      result.add(res)
+      iPtr = cast[ptr DebuggingInfo](
+        cast[uint](iPtr) + sizeof(DebuggingInfo).uint)
 
     c_free(functionInfoPtr)
 
