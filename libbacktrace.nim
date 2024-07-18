@@ -89,8 +89,8 @@ when not (defined(nimscript) or defined(js)):
 
     var
       length {.noinit.}: cint
-      functionInfoPtr = get_debugging_info_c(
-        addr programCounters[0], programCounters.len.cint,
+      functionInfoPtr = get_debugging_info_c(  # Nim 1.6 needs `unsafeAddr`
+        unsafeAddr programCounters[0], programCounters.len.cint,
         maxLength, addr length)
       iPtr = functionInfoPtr
       res: StackTraceEntry
