@@ -7,7 +7,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        branch: [version-1-6, version-2-0]
+        branch: [version-1-6, version-2-0, version-2-2, devel]
         target:
           - os: linux
             cpu: amd64
@@ -15,6 +15,8 @@ jobs:
             cpu: i386
           - os: macos
             cpu: amd64
+          - os: macos
+            cpu: arm64
           - os: windows
             cpu: amd64
           - os: windows
@@ -25,6 +27,11 @@ jobs:
             builder: ubuntu-latest
           - target:
               os: macos
+              cpu: amd64
+            builder: macos-13
+          - target:
+              os: macos
+              cpu: arm64
             builder: macos-latest
           - target:
               os: windows
@@ -38,7 +45,7 @@ jobs:
     runs-on: ${{ matrix.builder }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -65,7 +72,7 @@ jobs:
       - name: Restore MinGW-W64 (Windows) from cache
         if: runner.os == 'Windows'
         id: windows-mingw-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: external/mingw-${{ matrix.target.cpu }}
           key: 'llvm-mingw-17-${{ matrix.target.cpu }}'
@@ -73,7 +80,7 @@ jobs:
       - name: Restore Nim DLLs dependencies (Windows) from cache
         if: runner.os == 'Windows'
         id: windows-dlls-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: external/dlls-${{ matrix.target.cpu }}
           key: 'dlls-${{ matrix.target.cpu }}'
@@ -123,7 +130,7 @@ jobs:
 
       - name: Restore prebuilt Nim from cache
         id: nim-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: NimBinaries
           key: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ steps.versions.outputs.nimbus_build_system }}'
@@ -132,6 +139,8 @@ jobs:
         run: |
           if [[ '${{ matrix.target.cpu }}' == 'amd64' ]]; then
             PLATFORM=x64
+          elif [[ '${{ matrix.target.cpu }}' == 'arm64' ]]; then
+            PLATFORM=arm64
           else
             PLATFORM=x86
           fi
