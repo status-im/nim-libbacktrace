@@ -145,12 +145,13 @@ $(LIBDIR)/libunwind.a:
 	+ echo -e $(BUILD_MSG) "$@"; \
 		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
 		cd vendor/libunwind && \
-		rm -f CMakeCache.txt && \
-		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
-			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
-			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
-		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
-		cp -a include "$(CURDIR)/install/usr/"
+		rm -rf build && \
+		$(CMAKE) -S libunwind \
+			-DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
+			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" \
+			$(CMAKE_ARGS) build $(HANDLE_OUTPUT) && \
+		$(MAKE) -C build VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
+		cp -a libunwind/include "$(CURDIR)/install/usr/"
 
 test: $(TESTS)
 
@@ -184,7 +185,6 @@ clean:
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
 	cd vendor/libunwind && \
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; } && \
-		rm -rf CMakeCache.txt CMakeFiles cmake_install.cmake install_manifest.txt Makefile
+		rm -rf build
 
 $(SILENT_TARGET_PREFIX).SILENT:
-
