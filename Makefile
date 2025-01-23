@@ -146,11 +146,13 @@ $(LIBDIR)/libunwind.a:
 		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
 		cd vendor/libunwind && \
 		rm -rf build && \
-		$(CMAKE) -S libunwind \
-			-DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
-			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" \
+		$(CMAKE) -S runtimes \
+			-DLLVM_ENABLE_RUNTIMES="libunwind" \
+			-DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" \
 			$(CMAKE_ARGS) build $(HANDLE_OUTPUT) && \
-		$(MAKE) -C build VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
+		$(MAKE) -C build VERBOSE=$(V) clean $(HANDLE_OUTPUT) && \
+		$(MAKE) -C build VERBOSE=$(V) unwind_static $(HANDLE_OUTPUT) && \
+		$(MAKE) -C build VERBOSE=$(V) install-unwind $(HANDLE_OUTPUT) && \
 		cp -a libunwind/include "$(CURDIR)/install/usr/"
 
 test: $(TESTS)

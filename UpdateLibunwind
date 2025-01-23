@@ -12,7 +12,7 @@ rm -rf libunwind
 mkdir -p libunwind
 pushd libunwind >/dev/null
 git init
-git sparse-checkout set libcxx/cmake libunwind llvm/cmake llvm/utils/lit
+git sparse-checkout set libcxx/cmake libunwind llvm/cmake llvm/utils/lit runtimes
 git remote add upstream "https://github.com/llvm/llvm-project"
 git fetch --depth 1 upstream "refs/tags/${COMMIT}:refs/tags/${COMMIT}"
 git checkout "${COMMIT}"
