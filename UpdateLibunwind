@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")"
+
+git diff --exit-code -- . ':(exclude)UpdateLibunwind' > /dev/null || { echo "Commit changes before updating!" ; exit 1 ; }
+
+# https://github.com/llvm/llvm-project/releases
+COMMIT="${1:-llvmorg-13.0.1}"
+
+pushd vendor >/dev/null
+rm -rf libunwind
+mkdir -p libunwind
+pushd libunwind >/dev/null
+git init
+git sparse-checkout set libcxx/cmake libunwind llvm/cmake llvm/utils/lit runtimes
+git remote add upstream "https://github.com/llvm/llvm-project"
+git fetch --depth 1 upstream "refs/tags/${COMMIT}:refs/tags/${COMMIT}"
+git checkout "${COMMIT}"
+popd >/dev/null
+popd >/dev/null
+
+! git diff --exit-code > /dev/null || { echo "This repository is already up to date" ; exit 0 ; }
+
+git commit -a \
+  -m "Bump libunwind to \`${COMMIT}\`" \
+  -m "- https://github.com/llvm/llvm-project/releases/tag/${COMMIT}"
+
+echo "The repo has been updated with a commit recording the update."
+echo "You can review the changes with 'git diff HEAD^' before pushing to a public repository."
