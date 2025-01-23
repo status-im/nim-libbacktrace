@@ -148,13 +148,13 @@ $(LIBDIR)/libunwind.a:
 		rm -rf build && \
 		$(CMAKE) -S runtimes \
 			-DLLVM_ENABLE_RUNTIMES="libunwind" \
-			-DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
+			-DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON \
+			-DLIBUNWIND_INCLUDE_DOCS=OFF -DLIBUNWIND_INSTALL_HEADERS=ON \
 			-DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" \
 			$(CMAKE_ARGS) build $(HANDLE_OUTPUT) && \
 		$(MAKE) -C build VERBOSE=$(V) clean $(HANDLE_OUTPUT) && \
 		$(MAKE) -C build VERBOSE=$(V) unwind_static $(HANDLE_OUTPUT) && \
-		$(MAKE) -C build VERBOSE=$(V) install-unwind $(HANDLE_OUTPUT) && \
-		cp -a libunwind/include "$(CURDIR)/install/usr/"
+		$(MAKE) -C build VERBOSE=$(V) install-unwind $(HANDLE_OUTPUT)
 
 test: $(TESTS)
 
