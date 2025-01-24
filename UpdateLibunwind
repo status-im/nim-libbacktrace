@@ -5,14 +5,14 @@ cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")"
 git diff --exit-code -- . ':(exclude)UpdateLibunwind' > /dev/null || { echo "Commit changes before updating!" ; exit 1 ; }
 
 # https://github.com/llvm/llvm-project/releases
-COMMIT="${1:-llvmorg-14.0.0}"
+COMMIT="${1:-llvmorg-15.0.0}"
 
 pushd vendor >/dev/null
 rm -rf libunwind
 mkdir -p libunwind
 pushd libunwind >/dev/null
 git init
-git sparse-checkout set cmake libcxx/cmake libunwind llvm/cmake llvm/utils/llvm-lit runtimes
+git sparse-checkout set cmake libunwind llvm/cmake llvm/utils/llvm-lit runtimes
 git remote add upstream "https://github.com/llvm/llvm-project"
 git fetch --depth 1 upstream "refs/tags/${COMMIT}:refs/tags/${COMMIT}"
 git checkout "${COMMIT}"
