@@ -5,7 +5,7 @@ cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")"
 git diff --exit-code -- . ':(exclude)UpdateLibunwind' > /dev/null || { echo "Commit changes before updating!" ; exit 1 ; }
 
 # https://github.com/llvm/llvm-project/releases
-COMMIT="${1:-llvmorg-17.0.6}"
+COMMIT="${1:-llvmorg-18.1.0}"
 
 pushd vendor >/dev/null
 rm -rf libunwind
