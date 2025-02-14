@@ -180,4 +180,4 @@ jobs:
             export NIMFLAGS="-d:nimRawSetjmp"
           fi
           ${MAKE_CMD} -j ${ncpu}
-          LIBUNWIND_PRINT_APIS=1 LIBUNWIND_PRINT_UNWINDING=1 ${MAKE_CMD} test
+          ${MAKE_CMD} test
