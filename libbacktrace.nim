@@ -36,13 +36,9 @@ when not (defined(nimscript) or defined(js)):
 
   when defined(libbacktraceUseSystemLibs):
     {.passl: "-lbacktrace".}
-    when defined(macosx) or defined(windows):
-      {.passl: "-lunwind".}
   else:
     {.passc: "-I" & escape(installPath & "/include").}
     {.passl: escape(installPath & "/lib/libbacktrace.a").}
-    when defined(macosx) or defined(windows):
-      {.passl: escape(installPath & "/lib/libunwind.a").}
 
   when defined(windows):
     {.passl: "-lpsapi".}
