@@ -133,22 +133,16 @@ You can even use libbacktrace in the Nim compiler itself, by building it with:
 
 ## Dependencies
 
-You need Make, CMake and, of course, Nim up and running.
+You need Make and Nim.
 
 The other dependencies are bundled, for your convenience. We use a [libbacktrace
-fork](https://github.com/status-im/libbacktrace)
-with macOS support and [LLVM's libunwind
-variant](https://github.com/llvm-mirror/libunwind) that's needed on macOS and Windows.
+fork](https://github.com/status-im/libbacktrace) with macOS support, and dynamically depend on the system's installed unwinder (libunwind / libSystem / libgcc\_s.so.1).
 
 If you know better and want to use your system's libbacktrace package instead
 of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing
 `-d:libbacktraceUseSystemLibs` to the Nim compiler.
 
-How does libbacktrace work on systems without libunwind installed, I hear you
-asking? It uses GCC's basic unwind support in libgcc\_s.so.1 - that runtime's so
-good that even Clang links it by default ;-)
-
-If you don't want to build the C++ wrapper, for some reason, pass `BUILD_CXX_LIB=0` to Make.
+If you don't want to build the C++ wrapper, pass `BUILD_CXX_LIB=0` to Make.
 
 To get the running binary's path in a cross-platform way, we rely on
 [whereami](https://github.com/gpakosz/whereami).
@@ -164,4 +158,3 @@ or
 * Apache License, Version 2.0, ([LICENSE-APACHEv2](LICENSE-APACHEv2) or http://www.apache.org/licenses/LICENSE-2.0)
 
 at your option. These files may not be copied, modified, or distributed except according to those terms.
-
