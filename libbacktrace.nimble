@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 Status Research & Development GmbH
+# Copyright (c) 2019-2024 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -16,7 +16,7 @@ license       = "MIT or Apache License 2.0"
 installDirs   = @["vendor/whereami/src", "install"]
 installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libbacktrace_wrapper.h", "libbacktrace/wrapper.nim"]
 
-requires "nim >= 1.0"
+requires "nim >= 1.6"
 
 # Enable `nimble check` to work before `nimble install` is invoked
 import os

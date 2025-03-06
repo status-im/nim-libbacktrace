@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 Status Research & Development GmbH
+# Copyright (c) 2019-2024 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -21,28 +21,24 @@ when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
 # there, but we might still want to import this module with a global
 # "--import:libbacktrace" Nim compiler flag.
 when not (defined(nimscript) or defined(js)):
-  import algorithm, libbacktrace/wrapper, os, system/ansi_c, strutils
+  import std/algorithm, libbacktrace/wrapper, std/os, system/ansi_c, std/strutils
 
   const
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
     installPath = topLevelPath & "/install/usr"
 
-  {.passc: "-I" & topLevelPath.}
+  {.passc: "-I" & escape(topLevelPath).}
 
   when defined(cpp):
-    {.passl: installPath & "/lib/libbacktracenimcpp.a".}
+    {.passl: escape(installPath & "/lib/libbacktracenimcpp.a").}
   else:
-    {.passl: installPath & "/lib/libbacktracenim.a".}
+    {.passl: escape(installPath & "/lib/libbacktracenim.a").}
 
   when defined(libbacktraceUseSystemLibs):
     {.passl: "-lbacktrace".}
-    when defined(macosx) or defined(windows):
-      {.passl: "-lunwind".}
   else:
-    {.passc: "-I" & installPath & "/include".}
-    {.passl: installPath & "/lib/libbacktrace.a".}
-    when defined(macosx) or defined(windows):
-      {.passl: installPath & "/lib/libunwind.a".}
+    {.passc: "-I" & escape(installPath & "/include").}
+    {.passl: escape(installPath & "/lib/libbacktrace.a").}
 
   when defined(windows):
     {.passl: "-lpsapi".}
@@ -59,35 +55,47 @@ when not (defined(nimscript) or defined(js)):
     c_free(bt)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverride):
-    registerStackTraceOverride(getBacktrace)
+    registerStackTraceOverride(libbacktrace.getBacktrace)
 
   proc getProgramCounters*(maxLength: cint): seq[cuintptr_t] {.noinline.} =
-    result = newSeqOfCap[cuintptr_t](maxLength)
-
     var
-      pcPtr = get_program_counters_c(max_length = maxLength, skip = 2)
+      length {.noinit.}: cint
+      pcPtr = get_program_counters_c(maxLength, addr length, skip = 2)
       iPtr = pcPtr
 
-    while iPtr[] != 0:
+    result = newSeqOfCap[cuintptr_t](length)
+    for i in 0 ..< length:
+      if iPtr[] == 0:
+        break
       result.add(iPtr[])
       iPtr = cast[ptr cuintptr_t](cast[uint](iPtr) + sizeof(cuintptr_t).uint)
 
     c_free(pcPtr)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetProgramCounters):
-    registerStackTraceOverrideGetProgramCounters(getProgramCounters)
+    registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
 
-  proc getDebuggingInfo*(programCounters: seq[cuintptr_t], maxLength: cint): seq[StackTraceEntry] {.noinline.} =
-    result = newSeqOfCap[StackTraceEntry](maxLength)
+  proc getDebuggingInfo*(
+      programCounters: seq[cuintptr_t],
+      maxLength: cint): seq[StackTraceEntry] {.noinline.} =
+    doAssert programCounters.len <= cint.high
+
     if programCounters.len == 0:
-      return
+      return @[]
 
     var
-      functionInfoPtr = get_debugging_info_c(unsafeAddr programCounters[0], maxLength)
+      length {.noinit.}: cint
+      functionInfoPtr = get_debugging_info_c(  # Nim 1.6 needs `unsafeAddr`
+        unsafeAddr programCounters[0], programCounters.len.cint,
+        maxLength, addr length)
       iPtr = functionInfoPtr
       res: StackTraceEntry
 
-    while iPtr[].filename != nil:
+    result = newSeqOfCap[StackTraceEntry](length.int)
+    for i in 0 ..< length:
+      if iPtr[].filename == nil:
+        break
+
       # Older stdlib doesn't have this field in "StackTraceEntry".
       when compiles(res.filenameStr):
         let filenameLen = len(iPtr[].filename)
@@ -105,11 +113,12 @@ when not (defined(nimscript) or defined(js)):
           copyMem(addr(res.procnameStr[0]), iPtr[].function, functionLen)
         res.procname = res.procnameStr
 
+      result.add(res)
+
       c_free(iPtr[].filename)
       c_free(iPtr[].function)
-
-      iPtr = cast[ptr DebuggingInfo](cast[uint](iPtr) + sizeof(DebuggingInfo).uint)
-      result.add(res)
+      iPtr = cast[ptr DebuggingInfo](
+        cast[uint](iPtr) + sizeof(DebuggingInfo).uint)
 
     c_free(functionInfoPtr)
 
@@ -117,4 +126,4 @@ when not (defined(nimscript) or defined(js)):
     reverse(result)
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverrideGetDebuggingInfo):
-    registerStackTraceOverrideGetDebuggingInfo(getDebuggingInfo)
+    registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)

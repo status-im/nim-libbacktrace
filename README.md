@@ -1,7 +1,6 @@
 # All the backtrace, none of the overhead
 
-[![Build Status](https://travis-ci.org/status-im/nim-libbacktrace.svg?branch=master)](https://travis-ci.org/status-im/nim-libbacktrace)
-[![Build status](https://ci.appveyor.com/api/projects/status/mrvu6ks50dl5y5y4/branch/master?svg=true)](https://ci.appveyor.com/project/nimbus/nim-libbacktrace/branch/master)
+![Github action](https://github.com/status-im/nim-libbacktrace/workflows/CI/badge.svg)
 [![License: Apache](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Stability: experimental](https://img.shields.io/badge/stability-experimental-orange.svg)
@@ -72,13 +71,13 @@ away with significantly fewer debugging symbols by switching to "-g1":
 
 ```bash
 # for the C backend
-nim c --debugger:native --gcc.options.debug:'-g1' -d:release somefile.nim
+nim c -d:release --debugger:native --gcc.options.debug:'-g1' somefile.nim
 
 # for the C++ backend
-nim cpp --debugger:native --gcc.cpp.options.debug:'-g1' -d:release somefile.nim
+nim cpp -d:release --debugger:native --gcc.cpp.options.debug:'-g1' somefile.nim
 
 # Clang needs a different argument
-nim c --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' -d:release somefile.nim
+nim c -d:release --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' somefile.nim
 ```
 
 When the C compiler inlines some functions, or does tail-call optimisation -
@@ -134,22 +133,16 @@ You can even use libbacktrace in the Nim compiler itself, by building it with:
 
 ## Dependencies
 
-You need Make, CMake and, of course, Nim up and running.
+You need Make and Nim.
 
 The other dependencies are bundled, for your convenience. We use a [libbacktrace
-fork](https://github.com/status-im/libbacktrace)
-with macOS support and [LLVM's libunwind
-variant](https://github.com/llvm-mirror/libunwind) that's needed on macOS and Windows.
+fork](https://github.com/status-im/libbacktrace) with macOS support, and dynamically depend on the system's installed unwinder (libunwind / libSystem / libgcc\_s.so.1).
 
 If you know better and want to use your system's libbacktrace package instead
 of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing
 `-d:libbacktraceUseSystemLibs` to the Nim compiler.
 
-How does libbacktrace work on systems without libunwind installed, I hear you
-asking? It uses GCC's basic unwind support in libgcc\_s.so.1 - that runtime's so
-good that even Clang links it by default ;-)
-
-If you don't want to build the C++ wrapper, for some reason, pass `BUILD_CXX_LIB=0` to Make.
+If you don't want to build the C++ wrapper, pass `BUILD_CXX_LIB=0` to Make.
 
 To get the running binary's path in a cross-platform way, we rely on
 [whereami](https://github.com/gpakosz/whereami).
@@ -165,4 +158,3 @@ or
 * Apache License, Version 2.0, ([LICENSE-APACHEv2](LICENSE-APACHEv2) or http://www.apache.org/licenses/LICENSE-2.0)
 
 at your option. These files may not be copied, modified, or distributed except according to those terms.
-

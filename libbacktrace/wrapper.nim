@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 Status Research & Development GmbH
+# Copyright (c) 2019-2024 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -28,16 +28,27 @@ proc get_backtrace_c*(): cstring {.
 
 # The returned array needs to be freed by the caller.
 # It holds at least a zero sentinel value at the end.
-proc get_program_counters_c*(max_length, skip: cint): ptr cuintptr_t {.
+proc get_program_counters_c*(
+    max_program_counters: cint,
+    num_program_counters: ptr cint,
+    skip: cint
+): ptr cuintptr_t {.
     importc: "get_program_counters_c", header: "libbacktrace_wrapper.h".}
 
-type
-  DebuggingInfo* {.importc: "struct debugging_info", header: "libbacktrace_wrapper.h", bycopy.} = object
-    filename* {.importc: "filename".}: cstring
-    lineno* {.importc: "lineno".}: cint
-    function* {.importc: "function".}: cstring
+type DebuggingInfo* {.
+    importc: "struct debugging_info",
+    header: "libbacktrace_wrapper.h",
+    bycopy.} = object
+  filename* {.importc: "filename".}: cstring
+  lineno* {.importc: "lineno".}: cint
+  function* {.importc: "function".}: cstring
 
 # The returned array needs to be freed by the caller.
 # Char pointers in the returned struct need to be freed by the caller.
-proc get_debugging_info_c*(program_counters: ptr cuintptr_t, max_length: cint): ptr DebuggingInfo {.
+proc get_debugging_info_c*(
+    program_counters: ptr cuintptr_t,
+    num_program_counters: cint,
+    max_debugging_infos: cint,
+    num_debugging_infos: ptr cint
+): ptr DebuggingInfo {.
     importc: "get_debugging_info_c", header: "libbacktrace_wrapper.h".}

@@ -7,10 +7,8 @@
 
 SHELL := bash # the shell used internally by Make
 
-NIM_PARAMS := -f --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
+NIM_PARAMS := -f --gc:refc --outdir:build --skipParentCfg:on --skipUserCfg:on $(NIMFLAGS)
 BUILD_MSG := "\\x1B[92mBuilding:\\x1B[39m"
-CMAKE := cmake
-CMAKE_MISSING_MSG := "CMake not installed. Aborting."
 
 # verbosity level
 V := 0
@@ -89,11 +87,6 @@ ifeq ($(shell uname), Darwin)
 MACOS_DEBUG_SYMBOLS = && dsymutil build/$@
 
 BUILD_MSG := "Building:"
-CMAKE_MISSING_MSG := "CMake not installed. Please run 'brew install cmake'. Aborting."
-
-#- macOS Clang needs the LLVM libunwind variant
-#  (GCC comes with its own, in libgcc_s.so.1, used even by Clang itself, on other platforms)
-USE_VENDORED_LIBUNWIND := 1
 endif # macOS
 
 ###########
@@ -102,32 +95,14 @@ endif # macOS
 ifeq ($(OS), Windows_NT)
 BUILD_MSG := "Building:"
 CPPFLAGS += -D__STDC_FORMAT_MACROS -D_WIN32_WINNT=0x0600
-CMAKE_ARGS := -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND"
-
-# the GCC one doesn't seem to work on 64 bit Windows
-USE_VENDORED_LIBUNWIND := 1
 
 LIBBACKTRACE_SED := sed -i 's/\$$[({]SHELL[)}]/"$$(SHELL)"/g' Makefile
 else
 LIBBACKTRACE_SED := true
 endif # Windows
 
-ifeq ($(USE_VENDORED_LIBUNWIND), 1)
-# libbacktrace needs to find libunwind during compilation
-export CPPFLAGS
-export LDLIBS
-
-# CMake ignores CPPFLAGS in the environment
-export CFLAGS += $(CPPFLAGS)
-export CXXFLAGS += $(CPPFLAGS)
-
-#- this library doesn't support parallel builds, hence the "-j1"
-#- the "Git for Windows" Bash is usually installed in a path with spaces, which messes up the Makefile. Add quotes.
-$(LIBDIR)/libbacktrace.a: $(LIBDIR)/libunwind.a
-else # USE_VENDORED_LIBUNWIND
 export CFLAGS
 export CXXFLAGS
-endif # USE_VENDORED_LIBUNWIND
 
 # We need to enable cross-compilation here, by passing "--build" and "--host"
 # to "./configure". We already set CC in the environment, so it doesn't matter
@@ -139,18 +114,6 @@ $(LIBDIR)/libbacktrace.a:
 			--with-pic --build=$(./config.guess) --host=arm MAKE="$(MAKE)" $(HANDLE_OUTPUT) && \
 		$(LIBBACKTRACE_SED) && \
 		$(MAKE) -j1 DESTDIR="$(CURDIR)/install" clean all install $(HANDLE_OUTPUT)
-
-# DESTDIR does not work on Windows for a CMake-generated Makefile
-$(LIBDIR)/libunwind.a:
-	+ echo -e $(BUILD_MSG) "$@"; \
-		which $(CMAKE) &>/dev/null || { echo $(CMAKE_MISSING_MSG); exit 1; }; \
-		cd vendor/libunwind && \
-		rm -f CMakeCache.txt && \
-		$(CMAKE) -DLIBUNWIND_ENABLE_SHARED=OFF -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_INCLUDE_DOCS=OFF \
-			-DLIBUNWIND_LIBDIR_SUFFIX="" -DCMAKE_INSTALL_PREFIX="$(CURDIR)/install/usr" -DCMAKE_CROSSCOMPILING=1 \
-			$(CMAKE_ARGS) . $(HANDLE_OUTPUT) && \
-		$(MAKE) VERBOSE=$(V) clean install $(HANDLE_OUTPUT) && \
-		cp -a include "$(CURDIR)/install/usr/"
 
 test: $(TESTS)
 
@@ -182,9 +145,5 @@ clean:
 	rm -rf install build *.o
 	cd vendor/libbacktrace-upstream && \
 		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; }
-	cd vendor/libunwind && \
-		{ [[ -e Makefile ]] && $(MAKE) clean $(HANDLE_OUTPUT) || true; } && \
-		rm -rf CMakeCache.txt CMakeFiles cmake_install.cmake install_manifest.txt Makefile
 
 $(SILENT_TARGET_PREFIX).SILENT:
-
