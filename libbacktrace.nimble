@@ -18,6 +18,10 @@ installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libback
 
 requires "nim >= 1.0"
 
+# Enable `nimble check` to work before `nimble install` is invoked
+import os
+mkDir("install")
+
 before install:
   exec "git submodule update --init"
   var make = "make"
