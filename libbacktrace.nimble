@@ -19,7 +19,7 @@ installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libback
 requires "nim >= 1.6"
 
 # Enable `nimble check` to work before `nimble install` is invoked
-import os
+import std/os
 mkDir("install")
 
 before install:
