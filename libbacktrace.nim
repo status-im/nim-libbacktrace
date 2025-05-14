@@ -102,7 +102,7 @@ when not (defined(nimscript) or defined(js)):
         res.filenameStr = newString(filenameLen)
         if filenameLen > 0:
           copyMem(addr(res.filenameStr[0]), iPtr[].filename, filenameLen)
-        res.filename = res.filenameStr
+        res.filename = cstring res.filenameStr
 
       res.line = iPtr[].lineno
 
@@ -111,7 +111,7 @@ when not (defined(nimscript) or defined(js)):
         res.procnameStr = newString(functionLen)
         if functionLen > 0:
           copyMem(addr(res.procnameStr[0]), iPtr[].function, functionLen)
-        res.procname = res.procnameStr
+        res.procname = cstring res.procnameStr
 
       result.add(res)
 
