@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024 Status Research & Development GmbH
+# Copyright (c) 2019-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -9,7 +9,7 @@
 mode = ScriptMode.Verbose
 
 packageName   = "libbacktrace"
-version       = "0.0.8"
+version       = "0.0.9"
 author        = "Status Research & Development GmbH"
 description   = "Nim wrapper for libbacktrace"
 license       = "MIT or Apache License 2.0"
