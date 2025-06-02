@@ -66,7 +66,11 @@ jobs:
           #!/bin/bash
           exec $(which g++) -m32 "\$@"
           EOF
-          chmod 755 external/bin/gcc external/bin/g++
+          cat << EOF > external/bin/ld
+          #!/bin/bash
+          exec $(which ld) -m32 "\$@"
+          EOF
+          chmod 755 external/bin/gcc external/bin/g++ external/bin/ld
           echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
 
       - name: Restore MinGW-W64 (Windows) from cache
