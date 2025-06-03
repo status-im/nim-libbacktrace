@@ -68,7 +68,7 @@ jobs:
           EOF
           chmod 755 external/bin/gcc external/bin/g++
           ln -s external/bin/gcc external/bin/cc
-          ls -la externa/bin/
+          ls -la external/bin/
           echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
 
       - name: Restore MinGW-W64 (Windows) from cache
