@@ -11,7 +11,7 @@ NIM_PARAMS := -f --gc:refc --outdir:build --skipParentCfg:on --skipUserCfg:on $(
 BUILD_MSG := "\\x1B[92mBuilding:\\x1B[39m"
 
 # verbosity level
-V := 0
+V := 2
 NIM_PARAMS := $(NIM_PARAMS) --verbosity:$(V)
 HANDLE_OUTPUT :=
 SILENT_TARGET_PREFIX := disabled
