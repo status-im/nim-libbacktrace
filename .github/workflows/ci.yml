@@ -68,6 +68,7 @@ jobs:
           EOF
           chmod 755 external/bin/gcc external/bin/g++
           ln -s external/bin/gcc external/bin/cc
+          ls -la externa/bin/
           echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
 
       - name: Restore MinGW-W64 (Windows) from cache
@@ -180,5 +181,6 @@ jobs:
             # https://github.com/status-im/nimbus-eth2/issues/3121
             export NIMFLAGS="-d:nimRawSetjmp"
           fi
+          ${MAKE_CMD} -p
           ${MAKE_CMD} -j ${ncpu}
           ${MAKE_CMD} test
