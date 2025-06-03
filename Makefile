@@ -38,6 +38,9 @@ AR := ar
 CC ?= gcc
 CXX ?= g++
 
+print:
+	echo CC=$(CC) CFLAGS=$(CFLAGS)
+
 TESTS := test1 \
 	test2
 

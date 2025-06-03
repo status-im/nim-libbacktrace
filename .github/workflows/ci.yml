@@ -188,5 +188,6 @@ jobs:
             export NIMFLAGS="-d:nimRawSetjmp"
           fi
           env
+          ${MAKE_CMD} print
           ${MAKE_CMD} --debug=v -j ${ncpu}
           ${MAKE_CMD} test
