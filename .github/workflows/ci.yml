@@ -58,6 +58,10 @@ jobs:
             --no-install-recommends -yq gcc-multilib g++-multilib \
             libssl-dev:i386
           mkdir -p external/bin
+          cat << EOF > external/bin/cc
+          #!/bin/bash
+          exec $(which cc) -m32 "\$@"
+          EOF
           cat << EOF > external/bin/gcc
           #!/bin/bash
           exec $(which gcc) -m32 "\$@"
