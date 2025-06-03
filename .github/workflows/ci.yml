@@ -60,14 +60,17 @@ jobs:
           mkdir -p external/bin
           cat << EOF > external/bin/gcc
           #!/bin/bash
+          echo "GCC -> " $(which gcc)
           exec $(which gcc) -m32 "\$@"
           EOF
           cat << EOF > external/bin/g++
           #!/bin/bash
+          echo "G++ -> " $(which g++)
           exec $(which g++) -m32 "\$@"
           EOF
           cat << EOF > external/bin/ld
           #!/bin/bash
+          echo "LD -> " $(which ld)
           exec $(which ld) -m32 "\$@"
           EOF
           chmod 755 external/bin/gcc external/bin/g++ external/bin/ld
