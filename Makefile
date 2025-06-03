@@ -35,7 +35,11 @@ CPPFLAGS := -I"$(CURDIR)/$(INCLUDEDIR)"
 LDLIBS := -L"$(CURDIR)/$(LIBDIR)"
 AR := ar
 # for Mingw-w64
+ifeq ($(origin CC), default)
+CC := gcc
+else
 CC ?= gcc
+endif
 CXX ?= g++
 
 TESTS := test1 \
