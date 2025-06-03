@@ -34,9 +34,20 @@ CXXFLAGS += -g -O3 -std=gnu++11 -pipe -Wall -Wextra -fPIC
 CPPFLAGS := -I"$(CURDIR)/$(INCLUDEDIR)"
 LDLIBS := -L"$(CURDIR)/$(LIBDIR)"
 AR := ar
-# for Mingw-w64
-CC ?= gcc
-CXX ?= g++
+
+ifeq ($(OS),Windows_NT)
+  CC := gcc
+  CXX := g++
+else
+  UNAME_S := $(shell uname -s)
+  ifeq ($(UNAME_S),Linux)
+    CC = gcc
+    CXX = g++
+  else
+    CC ?= gcc
+    CXX ?= g++
+  endif
+endif
 
 TESTS := test1 \
 	test2
