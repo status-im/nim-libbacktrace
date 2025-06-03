@@ -187,5 +187,6 @@ jobs:
             # https://github.com/status-im/nimbus-eth2/issues/3121
             export NIMFLAGS="-d:nimRawSetjmp"
           fi
+          env
           ${MAKE_CMD} --debug=v -j ${ncpu}
           ${MAKE_CMD} test
