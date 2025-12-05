@@ -393,6 +393,8 @@ char *get_backtrace_max_length_c(int max_length, int skip)
 					di_data[i].filename,
 					di_data[i].lineno,
 					di_data[i].function);
+				xfree(di_data[i].filename);
+				xfree(di_data[i].function);
 				if (output_size < 0) {
 					fprintf(stderr, "FATAL: snprintf failed unexpectedly: %d.\n", output_size);
 					exit(1);
@@ -408,6 +410,8 @@ char *get_backtrace_max_length_c(int max_length, int skip)
 			backtrace_line_lengths[i] = output_size;
 			total_length += output_size;
 		}
+
+		xfree(di_data);
 
 		char *backtrace = (char*) xmalloc(total_length + 1);
 		char *bt = backtrace;
