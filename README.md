@@ -19,7 +19,12 @@ since it prevents the C compiler from doing tail-call optimisations.
 This is a lightweight alternative based on libbacktrace, meant to offer the
 same stack traces without the runtime overhead.
 
-C++ function name demangling is supported using "\_\_cxa\_demangle()".
+As of https://github.com/nim-lang/Nim/pull/23302, Nim mangles names using the
+C++ Itanium ABI.
+
+Function name demangling is supported using "\_\_cxa\_demangle()" and
+requires a C++ compiler. Set `-d:libbacktraceDemangle=false` to only use C
+features.
 
 ## Building & Testing
 
@@ -142,7 +147,7 @@ If you know better and want to use your system's libbacktrace package instead
 of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing
 `-d:libbacktraceUseSystemLibs` to the Nim compiler.
 
-If you don't want to build the C++ wrapper, pass `BUILD_CXX_LIB=0` to Make.
+
 
 To get the running binary's path in a cross-platform way, we rely on
 [whereami](https://github.com/gpakosz/whereami).

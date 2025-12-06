@@ -9,7 +9,11 @@
  */
 
 #include <backtrace-supported.h>
+
+#ifdef BACKTRACE_SUPPORTED
 #include <backtrace.h>
+#endif
+
 #include <errno.h>
 #include <inttypes.h>
 #include <libgen.h>
@@ -122,6 +126,15 @@ static int string_starts_with(const char *str1, const char *str2)
 	}
 }
 
+static int string_contains(const char *str1, const char *str2)
+{
+	if (!str1 || !str2) {
+		return 0;
+	} else {
+		return strstr(str1, str2) != 0;
+	}
+}
+
 #ifdef __cplusplus
 # include <cxxabi.h>
 #endif // __cplusplus
@@ -133,8 +146,7 @@ static char *demangle(const char *function)
 		exit(1);
 	}
 
-	char *res = xstrdup(function);
-
+	char* res;
 #ifdef __cplusplus
 	// C++ function name demangling.
 	size_t demangled_len;
@@ -142,13 +154,12 @@ static char *demangle(const char *function)
 	char* demangled = abi::__cxa_demangle(function, NULL, &demangled_len, &status);
 	if (demangled && status == 0) {
 		demangled[demangled_len] = '\0';
-		// Get rid of function parenthesis and params.
-		char *par_pos = strchr(demangled, '(');
-		if (par_pos)
-			*par_pos = '\0';
-		xfree(res);
 		res = demangled;
+	} else {
+		res = xstrdup(function);
 	}
+#else
+	res = xstrdup(function);
 #endif // __cplusplus
 
 	// Nim demangling.
@@ -192,8 +203,8 @@ static int success_callback(void *data, uintptr_t pc __attribute__((unused)),
 	}
 
 	// these ones appear when we're used inside the Nim compiler
-	if (strings_equal(demangled_function, "auxWriteStackTraceWithOverride") ||
-			strings_equal(demangled_function, "rawWriteStackTrace") ||
+	if (string_contains(demangled_function, "auxWriteStackTraceWithOverride") ||
+			string_contains(demangled_function, "rawWriteStackTrace") ||
 			strings_equal(demangled_function, "writeStackTrace") ||
 			strings_equal(demangled_function, "raiseExceptionAux") ||
 			string_starts_with(demangled_function, "raiseExceptionEx")) {

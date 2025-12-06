@@ -63,29 +63,7 @@ else
 LIBBACKTRACE_DEP :=
 endif
 
-all: $(LIBBACKTRACE_DEP) $(LIBDIR)/libbacktracenim.a
-
-BUILD_CXX_LIB := 1
-ifeq ($(BUILD_CXX_LIB), 1)
-all: $(LIBDIR)/libbacktracenimcpp.a
-endif
-
-$(LIBDIR)/libbacktracenim.a: libbacktrace_wrapper.o | $(LIBDIR)
-	echo -e $(BUILD_MSG) "$@" && \
-		rm -f $@ && \
-		$(AR) rcs $@ $<
-
-# it doesn't link to libbacktrace.a, but it needs the headers installed by that target
-libbacktrace_wrapper.o: libbacktrace_wrapper.c libbacktrace_wrapper.h $(LIBBACKTRACE_DEP)
-
-$(LIBDIR)/libbacktracenimcpp.a: libbacktrace_wrapper_cpp.o | $(LIBDIR)
-	echo -e $(BUILD_MSG) "$@" && \
-		rm -f $@ && \
-		$(AR) rcs $@ $<
-
-# implicit rule doesn't kick in
-libbacktrace_wrapper_cpp.o: libbacktrace_wrapper.cpp libbacktrace_wrapper.c libbacktrace_wrapper.h $(LIBBACKTRACE_DEP)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+all: $(LIBBACKTRACE_DEP)
 
 $(LIBDIR):
 	mkdir -p $@
@@ -145,12 +123,10 @@ else
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim c $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride --passC:-flto=auto --passL:-flto=auto tests/$@.nim) $(ECHO_AND_RUN)
 endif
-ifeq ($(BUILD_CXX_LIB), 1)
 	# for the C++ backend:
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
 	$(eval CMD := nim cpp $(NIM_PARAMS) --debugger:native -d:release --gcc.cpp.options.debug:'-g1' -d:nimStackTraceOverride tests/$@.nim) $(ECHO_AND_RUN)
-endif
 
 clean:
 	rm -rf install build *.o
