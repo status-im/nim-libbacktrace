@@ -9,7 +9,7 @@
 mode = ScriptMode.Verbose
 
 packageName   = "libbacktrace"
-version       = "0.0.9"
+version       = "0.1.0"
 author        = "Status Research & Development GmbH"
 description   = "Nim wrapper for libbacktrace"
 license       = "MIT or Apache License 2.0"

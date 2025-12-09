@@ -24,15 +24,18 @@ when not (defined(nimscript) or defined(js)):
   import std/algorithm, libbacktrace/wrapper, std/os, system/ansi_c, std/strutils
 
   const
+    libbacktraceDemangle {.booldefine.} = true
+      ## Enabling demangling causes a dependency on the C++, for demangling
+
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
     installPath = topLevelPath & "/install/usr"
 
   {.passc: "-I" & escape(topLevelPath).}
 
-  when defined(cpp):
-    {.passl: escape(installPath & "/lib/libbacktracenimcpp.a").}
+  when libbacktraceDemangle:
+    {.compile: "libbacktrace_wrapper.cpp".}
   else:
-    {.passl: escape(installPath & "/lib/libbacktracenim.a").}
+    {.compile: "libbacktrace_wrapper.c".}
 
   when defined(libbacktraceUseSystemLibs):
     {.passl: "-lbacktrace".}
