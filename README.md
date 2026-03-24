@@ -1,6 +1,6 @@
 # All the backtrace, none of the overhead
 
-![Github action](https://github.com/status-im/nim-libbacktrace/workflows/CI/badge.svg)
+[![CI](https://github.com/status-im/nim-libbacktrace/actions/workflows/ci.yml/badge.svg)](https://github.com/status-im/nim-libbacktrace/actions/workflows/ci.yml)
 [![License: Apache](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Stability: experimental](https://img.shields.io/badge/stability-experimental-orange.svg)
