@@ -24,7 +24,7 @@ when not (defined(nimscript) or defined(js)):
   import std/algorithm, libbacktrace/wrapper, std/os, system/ansi_c, std/strutils
 
   const
-    libbacktraceDemangle {.booldefine.} = true
+    libbacktraceDemangle {.booldefine.} = defined(cpp)
       ## Enabling demangling causes a dependency on the C++, for demangling
 
     topLevelPath = currentSourcePath.parentDir().replace('\\', '/')
