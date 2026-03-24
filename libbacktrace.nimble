@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2025 Status Research & Development GmbH
+# Copyright (c) 2019-2026 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0,
 #  * MIT license
@@ -8,23 +8,24 @@
 
 mode = ScriptMode.Verbose
 
-packageName   = "libbacktrace"
-version       = "0.1.0"
-author        = "Status Research & Development GmbH"
-description   = "Nim wrapper for libbacktrace"
-license       = "MIT or Apache License 2.0"
-installDirs   = @["vendor/whereami/src", "install"]
-installFiles  = @["libbacktrace_wrapper.c", "libbacktrace_wrapper.cpp", "libbacktrace_wrapper.h", "libbacktrace/wrapper.nim"]
+packageName = "libbacktrace"
+version = "0.2.0"
+author = "Status Research & Development GmbH"
+description = "Nim wrapper for libbacktrace"
+license = "MIT or Apache License 2.0"
+installExt = @["nim", "h", "c", "cpp", "in"]
 
-requires "nim >= 1.6"
+requires "nim >= 2.0"
 
-# Enable `nimble check` to work before `nimble install` is invoked
-import std/os
-mkDir("install")
+task test, "Run tests":
+  for test in ["test1", "test2"]:
+    for be in ["c", "cpp"]:
+      for mode in ["debug", "release", "danger"]:
+        for override in ["", " -d:nimStackTraceOverride"]:
+          for mm in [" --mm:refc", " --mm:orc"]:
+            if defined(windows) and sizeof(int) == 4 and "orc" in mm:
+              continue # Seems to crash somewhere in nim..
 
-before install:
-  exec "git submodule update --init"
-  var make = "make"
-  when defined(windows):
-    make = "mingw32-make"
-  exec make
+            exec "nim " & be &
+              " -r --debugger:native --outdir:build --skipParentCfg:on --skipUserCfg:on -f -d:" &
+              mode & override & mm & " tests/" & test

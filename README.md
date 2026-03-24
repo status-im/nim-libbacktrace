@@ -77,8 +77,15 @@ add the options there:
 --stacktrace:off
 --import:libbacktrace
 --define:nimStackTraceOverride
---define:libbacktraceDemangle
 ```
+
+### Demangling
+
+To support demangling (ie turning cryptic symbols into mostly readable function
+names), the library links to the standard C++ library using the C++ compiler.
+
+You can disable demangling support if you want to drop back to plain C by adding
+`-d:libbacktraceDemangle=false` to your compile options.
 
 ### Advanced options
 
@@ -97,6 +104,7 @@ nim cpp -d:release --debugger:native --gcc.cpp.options.debug:'-g1' somefile.nim
 # Clang needs a different argument
 nim c -d:release --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' somefile.nim
 ```
+
 When the C compiler inlines some functions, or does tail-call optimisation -
 usually with `-d:release` or `-d:danger` - your stack trace might be incomplete.
 
@@ -172,18 +180,12 @@ You can even use libbacktrace in the Nim compiler itself, by building it with:
 
 ## Dependencies
 
-You need Make and Nim.
+Backtraces and debug information is read using
+[libbacktrace](https://github.com/ianlancetaylor/libbacktrace) which gets built
+automatically as needed.
 
-The other dependencies are bundled, for your convenience. We use a [libbacktrace
-fork](https://github.com/ianlancetaylor/libbacktrace) with macOS support, and
-dynamically depend on the system's installed unwinder (libunwind / libSystem / libgcc\_s.so.1).
-
-If you know better and want to use your system's libbacktrace package instead
-of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing
-`-d:libbacktraceUseSystemLibs` to the Nim compiler.
-
-To get the running binary's path in a cross-platform way, we rely on
-[whereami](https://github.com/gpakosz/whereami).
+`libbacktrace` is typically built on the fly - to use `libbacktrace` provided
+by the system, add `-d:libbacktraceUseSystemLibs` to the flags.
 
 ## License
 

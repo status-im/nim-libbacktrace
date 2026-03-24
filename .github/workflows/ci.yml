@@ -7,7 +7,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        branch: [version-1-6, version-2-0, version-2-2, devel]
+        branch: [version-2-0, version-2-2, devel]
         target:
           - os: linux
             cpu: amd64
@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.builder }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -167,11 +167,27 @@ jobs:
 
       - name: Run tests
         run: |
-          gcc --version
           nim --version
+          nimble --version
           if [[ "${{ matrix.target.os }}" == "windows" ]]; then
             # https://github.com/status-im/nimbus-eth2/issues/3121
             export NIMFLAGS="-d:nimRawSetjmp"
           fi
-          ${MAKE_CMD} -j ${ncpu}
-          ${MAKE_CMD} test
+          nimble test
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2  # In PR, has extra merge commit: ^1 = PR, ^2 = base
+
+      - name: Check NPH formatting
+        uses: arnetheduck/nph-action@v1
+        with:
+          version: 0.7.0
+          options: "./. *.nim*"
+          fail: true
+          suggest: true
