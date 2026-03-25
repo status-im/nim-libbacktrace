@@ -35,8 +35,7 @@ when not (defined(nimscript) or defined(js)):
         "Without -d:nimStackTraceOverride, results from getStacktrace must be manually deallocated"
     .}
 
-  import
-    system/ansi_c, std/[algorithm, compilesettings, os, strutils], libbacktrace/wrapper
+  import system/ansi_c, std/[algorithm, compilesettings, os], libbacktrace/wrapper
 
   const
     libbacktraceDemangle {.booldefine.} = true
@@ -108,7 +107,6 @@ when not (defined(nimscript) or defined(js)):
   template setString(
       entry: var StackTraceEntry, a, b: untyped, function: cstring, owned: bool
   ) =
-    const projectName = querySetting(SingleValueSetting.projectName)
     when compiles(entry.a):
       entry.a = $function
       entry.b = cstring(entry.a)

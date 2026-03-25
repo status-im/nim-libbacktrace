@@ -77,6 +77,7 @@ type
    value and SYMSIZE is the size of the symbol.  SYMNAME will be NULL
    if no error occurred but the symbol could not be found.
     ]##
+
 template isNil*(state: BacktraceState): bool =
   pointer(state).isNil
 
