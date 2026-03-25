@@ -219,7 +219,7 @@ when not (defined(nimscript) or defined(js)):
         entry[].setString(procname, projectName)
         data[].done = true
       else:
-        when declared(libbacktrace_demangle):
+        when declared(libbacktrace_demangler):
           if not owned:
             # demangler makes a copy of the function
             function = libbacktrace_demangler(function)
