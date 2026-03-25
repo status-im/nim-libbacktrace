@@ -18,17 +18,17 @@ import std/[compilesettings, os, strutils]
 # Platform-specific file format support
 when defined(linux):
   const pdefs = [
-    "BACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "HAVE_DL_ITERATE_PHDR=1",
-    "HAVE_DECL_PAGESIZE=1", "HAVE_FCNTL=1", "HAVE_LINK_H=1", "HAVE_READLINK=1",
+    "-DBACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "-DHAVE_DL_ITERATE_PHDR=1",
+    "-DHAVE_DECL_PAGESIZE=1", "-DHAVE_FCNTL=1", "-DHAVE_LINK_H=1", "-DHAVE_READLINK=1",
   ]
 elif defined(macosx):
-  const pdefs = ["HAVE_DECL_PAGESIZE=1", "HAVE_FCNTL=1", "HAVE_MACH_O_DYLD_H=1"]
+  const pdefs = ["-DHAVE_DECL_PAGESIZE=1", "-DHAVE_FCNTL=1", "-DHAVE_MACH_O_DYLD_H=1"]
 elif defined(windows):
-  const pdefs = ["HAVE__PGMPTR=1", "HAVE_TLHELP32_H=1", "HAVE_WINDOWS_H=1"]
+  const pdefs = ["-DHAVE__PGMPTR=1", "-DHAVE_TLHELP32_H=1", "-DHAVE_WINDOWS_H=1"]
 elif defined(freebsd) or defined(openbsd):
   const pdefs = [
-    "BACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "HAVE_DL_ITERATE_PHDR=1",
-    "HAVE_FCNTL=1", "HAVE_LINK_H=1", "KERN_PROC=1", "HAVE_READLINK=1",
+    "-DBACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "-DHAVE_DL_ITERATE_PHDR=1",
+    "-DHAVE_FCNTL=1", "-DHAVE_LINK_H=1", "-DKERN_PROC=1", "-DHAVE_READLINK=1",
   ]
 else:
   {.
@@ -40,27 +40,19 @@ const
   # Place output in a separate folder since we have to generate a file named "config.h"
   outputDir =
     querySetting(SingleValueSetting.nimcacheDir).replace('\\', '/') & "/nim-libbacktrace"
-  amalgamation = outputDir & "/backtrace_all.c"
   backtraceSupportedH = outputDir & "/backtrace-supported.h"
-  includes = "-I" & outputDir & " -I" & sourcePath & "/../vendor/libbacktrace-upstream"
+  includes = ["-I" & outputDir, " -I" & sourcePath & "/../vendor/libbacktrace-upstream"]
 
   # General defines that are at worst harmless on all platformss
   defs = [
-    "_GNU_SOURCE=1", "_LARGE_FILES=1", "HAVE_ATOMIC_FUNCTIONS=1", "HAVE_DECL_STRNLEN=1",
-    "HAVE_GETIPINFO=1", "HAVE_LSTAT=1", "HAVE_SYNC_FUNCTIONS=1",
+    "-D_GNU_SOURCE=1", "-D_LARGE_FILES=1", "-DHAVE_ATOMIC_FUNCTIONS=1",
+    "-DHAVE_DECL_STRNLEN=1", "-DHAVE_GETIPINFO=1", "-DHAVE_LSTAT=1",
+    "-DHAVE_SYNC_FUNCTIONS=1",
   ]
 
-  flags = block:
-    var res: string
-    for v in defs:
-      res.add " -D"
-      res.add v
-    for v in pdefs:
-      res.add " -D"
-      res.add v
-    res
+  flags = includes.join(" ") & " " & defs.join(" ") & " " & pdefs.join(" ")
 
-{.compile(amalgamation, includes & flags).}
+{.compile("backtrace_all.c", flags).}
 
 static:
   when not fileExists(backtraceSupportedH):
