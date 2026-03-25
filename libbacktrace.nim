@@ -17,6 +17,11 @@
 # and users need to import it, even if they don't call getBacktrace() manually).
 {.used.}
 
+# Disable runtime checks in this module - since we're often collecting stack
+# traces while processing exceptions, they wouldn't do much good anyway - we'll
+# just have to be careful :)
+{.push stacktrace: off, checks: off, linetrace: off.}
+
 # There is no "copyMem()" in Nimscript, so "getBacktrace()" will not work in
 # there, but we might still want to import this module with a global
 # "--import:libbacktrace" Nim compiler flag.
@@ -65,6 +70,12 @@ when not (defined(nimscript) or defined(js)):
     # backtrace to avoid it getting released after the callback
     proc c_strdup(v: cstring): cstring {.importc: "strdup", header: "string.h".}
 
+  when not declared(c_strstr):
+    # nim < 2.2.2
+    proc c_strstr*(
+      haystack, needle: cstring
+    ): cstring {.importc: "strstr", header: "<string.h>", noSideEffect.}
+
   proc error(data: pointer, msg: cstring, errnum: cint) {.cdecl.} =
     when libbacktraceLogErrors:
       c_fprintf(cstderr, "backtrace: %s (%d)\n", msg, errnum)
@@ -73,61 +84,49 @@ when not (defined(nimscript) or defined(js)):
 
   proc getProgramCounters*(maxLength: cint): seq[cuintptr_t] {.noinline.} =
     ## Capture the current stack trace up to `maxLength` depth
-    result.setLen(maxLength.int)
 
-    type SimpleData = tuple[v: ptr UncheckedArray[cuintptr_t], n: cuint, maxlen: cuint]
-    var data: SimpleData =
-      (cast[ptr UncheckedArray[cuintptr_t]](addr result[0]), 0, cuint maxLength)
+    type SimpleData = tuple[v: ptr seq[cuintptr_t], maxLength: cint]
     proc callback(data: pointer, pc: cuintptr_t): cint {.cdecl.} =
       let data = cast[ptr SimpleData](data)
-      if data.n == data.maxlen:
-        1
+      if data[].v[].len == int data[].maxLength:
+        1 # Stop iterating
       else:
-        data.v[data.n] = pc
-        data.n += 1
-        0
+        data[].v[].add pc
+        0 # Keep going
 
+    var data: SimpleData = (addr result, maxLength)
     if backtrace_simple(state, 2, callback, error, addr data) == 0:
-      result.setLen(data.n.int)
       reverse(result) # Nim convention is opposite of that of backtrace
     else:
       result.reset()
 
-  when not declared(c_strstr):
-    # nim < 2.2.2
-    proc c_strstr*(
-      haystack, needle: cstring
-    ): cstring {.importc: "strstr", header: "<string.h>", noSideEffect.}
-
-  when defined(nimStackTraceOverride) and
-      declared(registerStackTraceOverrideGetProgramCounters):
-    if not state.isNil:
-      registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
-
   template setString(
-      entry: var StackTraceEntry, a, b: untyped, function: cstring, owned: bool
+      entry: var StackTraceEntry, field: untyped, function: cstring, owned: bool
   ) =
-    when compiles(entry.a):
-      entry.a = $function
-      entry.b = cstring(entry.a)
+    when compiles(entry.`field Str`):
+      # In override mode, a `string` in the StackTraceEntry holds the GC ref
+      # and a pointer to that ref is assigned to the public field (which might
+      # lead to dangling pointers!)
+      entry.`field Str` = $function
+      entry.field = cstring(entry.`field Str`)
 
       if owned:
         c_free(function)
     else:
       # symname must be deallocated manually by the caller (!)
-      entry.b =
+      entry.field =
         if owned:
           function
         else:
           c_strdup(function)
 
-  template setString(entry: var StackTraceEntry, a, b: untyped, function: string) =
-    when compiles(entry.a):
-      entry.a = function
-      entry.b = cstring(entry.a)
+  template setString(entry: var StackTraceEntry, field: untyped, function: string) =
+    when compiles(entry.field):
+      entry.`field Str` = function
+      entry.field = cstring(entry.`field Str`)
     else:
       # symname must be deallocated manually by the caller (!)
-      entry.b = c_strdup(function)
+      entry.field = c_strdup(function)
 
   proc to0xHexLower(v: cuintptr_t): string =
     const HexChars = "0123456789abcdef"
@@ -146,18 +145,7 @@ when not (defined(nimscript) or defined(js)):
     ## inlining information.
     ##
     ## If `-d:nimStackTraceOverride` is not enabled, you are responsible for
-    ## freeing `filename` nad `procname` with `c_free`.
-    result.setLen(maxLength)
-
-    type PcData =
-      tuple[v: ptr UncheckedArray[StackTraceEntry], n: cuint, maxlen: cuint, done: bool]
-
-    var data: PcData = (
-      cast[ptr UncheckedArray[StackTraceEntry]](addr result[0]),
-      0,
-      cuint maxLength,
-      false,
-    )
+    ## freeing `filename` and `procname` with `c_free`.
 
     proc syminfo(
         data: pointer, pc: cuintptr_t, symname: cstring, symval, symsize: cuintptr_t
@@ -171,6 +159,7 @@ when not (defined(nimscript) or defined(js)):
           else:
             strdup(symname)
 
+    type PcData = tuple[v: ptr seq[StackTraceEntry], maxLength: cint, done: bool]
     proc pcinfo(
         data: pointer,
         pc: cuintptr_t,
@@ -179,8 +168,8 @@ when not (defined(nimscript) or defined(js)):
         function: cstring,
     ): cint {.cdecl.} =
       let data = cast[ptr PcData](data)
-      if data.done or data.n == data.maxlen:
-        # Because pcInfo might becalled multiple times per pc, we might outgrow
+      if data.done or data.v[].len == int data.maxLength:
+        # Because `pcinfo` might becalled multiple times per pc, we might outgrow
         # the allocated space!
         return 1 # Stop iterating
 
@@ -197,12 +186,16 @@ when not (defined(nimscript) or defined(js)):
         if backtrace_syminfo(state, pc, syminfo, error, addr function) != 1:
           function = nil
         elif function != nil:
-          # the syminfo callback copies and demangles the function name!
+          # the syminfo callback copies and demangles the function name, see above
           owned = true
 
       const projectName = querySetting(SingleValueSetting.projectName)
 
       if function != nil:
+        # Functions in the nim standard library that we don't want to show in a
+        # stack trace - a better option would be for the std lib to indicate how
+        # many functions to remove from the stack trace but that ship sailed
+        # unfortunately
         const skipped = [
           cstring "writeStackTrace", "rawWriteStackTrace",
           "auxWriteStackTraceWithOverride", "rawWriteStackTrace", "raiseExceptionEx",
@@ -214,45 +207,45 @@ when not (defined(nimscript) or defined(js)):
               c_free(function)
             return 0 # Skipped, but we need to keep going
 
-      let entry = addr data.v[data.n]
-      data.n += 1
+      # Avoid moving StackTraceEntry around for above described reallocation reasons
+      data[].v[].add StackTraceEntry()
+      let entry = addr data[].v[][^1]
 
       if function == nil:
         # Function unknown - put the program counter as function name instead
-        entry[].setString(procnameStr, procname, to0xHexLower(pc))
+        entry[].setString(procname, to0xHexLower(pc))
       elif c_strstr(function, "NimMainModule") != nil:
         # `NimMainModule` hosts all the code that lives outside of any proc/func
-        entry[].setString(procnameStr, procname, projectName)
-        data.done = true
+        entry[].setString(procname, projectName)
+        data[].done = true
       else:
         when declared(libbacktrace_demangle):
           if not owned:
             # demangler makes a copy of the function
             function = libbacktrace_demangler(function)
             owned = true
-        entry[].setString(procnameStr, procname, function, owned)
+        entry[].setString(procname, function, owned)
 
       if filename != nil and filename[0] != '\0':
-        entry[].setString(filenameStr, filename, filename, false)
+        entry[].setString(filename, filename, false)
 
       entry[].line = lineno.int
 
-    # Process programCounters backwards then reverse, to account for inlining
-    # expanding to multiple entries and to make it easier to stop when we reach
-    # NimMain
+    # Allocate the result up front to reduce allocations during traversal which
+    # might mess up the internal pointers of StackTraceEntry - hopefully
+    # reduces the incidence of https://github.com/nim-lang/Nim/issues/25306
+    result = newSeqOfCap[StackTraceEntry](maxLength)
+
+    var data: PcData = (addr result, maxLength, false)
+
+    # Process `programCounters` backwards then `reverse` to account for the
+    # order in which pcinfo calls the callback - also simplifies the logic for
+    # stopping at `NimMainModule`
     for i in countdown(programCounters.high(), 0):
       if backtrace_pcinfo(state, programCounters[i], pcinfo, error, addr data) != 0:
         break
 
-    result.setLen(data.n.int)
-
-    # Restore nim order
     reverse(result)
-
-  when defined(nimStackTraceOverride) and
-      declared(registerStackTraceOverrideGetDebuggingInfo):
-    if not state.isNil:
-      registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)
 
   proc getBacktrace*(): string {.noinline.} =
     ## Get a formatted backtrace of the current call stack - for more control,
@@ -269,7 +262,7 @@ when not (defined(nimscript) or defined(js)):
         when not defined(nimStackTraceOverride):
           c_free(entry.filename)
       else:
-        result.add "(unknown)"
+        result.add "???"
       result.add "("
       result.add $entry.line
       result.add ")"
@@ -282,6 +275,15 @@ when not (defined(nimscript) or defined(js)):
 
       result.add "\p"
 
-  when defined(nimStackTraceOverride) and declared(registerStackTraceOverride):
-    if not state.isNil:
-      registerStackTraceOverride(libbacktrace.getBacktrace)
+  when defined(nimStackTraceOverride):
+    when declared(registerStackTraceOverrideGetProgramCounters):
+      if not state.isNil:
+        registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
+
+    when declared(registerStackTraceOverrideGetDebuggingInfo):
+      if not state.isNil:
+        registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)
+
+    when declared(registerStackTraceOverride):
+      if not state.isNil:
+        registerStackTraceOverride(libbacktrace.getBacktrace)
