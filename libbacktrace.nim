@@ -157,7 +157,7 @@ when not (defined(nimscript) or defined(js)):
           when declared(libbacktrace_demangler):
             libbacktrace_demangler(symname)
           else:
-            strdup(symname)
+            c_strdup(symname)
 
     type PcData = tuple[v: ptr seq[StackTraceEntry], maxLength: cint, done: bool]
     proc pcinfo(
