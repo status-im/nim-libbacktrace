@@ -121,7 +121,7 @@ when not (defined(nimscript) or defined(js)):
           c_strdup(function)
 
   template setString(entry: var StackTraceEntry, field: untyped, function: string) =
-    when compiles(entry.field):
+    when compiles(entry.`field Str`):
       entry.`field Str` = function
       entry.field = cstring(entry.`field Str`)
     else:
