@@ -5,9 +5,10 @@
 #
 # The following things are generated:
 #
-# * A C amalgamation that includes all the relevant .c files for the platform
-# * `backtrace-supported.h` for libbactrace itself
-# * Constants at the Nim level that can be used to detect backtrace support
+# * `backtrace-supported.h` needed by libbacktrace
+# * `config.h` - empty, but must be present
+# * A set of defines that would normally be written to said config.h (we
+#   equivalently pass them as flags instead)
 #
 # Features from libbacktrace that we're not using (TODO?):
 # * Compression
