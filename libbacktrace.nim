@@ -60,7 +60,7 @@ when not (defined(nimscript) or defined(js)):
 
     proc libbacktrace_demangler(name: cstring): cstring {.importc.}
 
-  when not defined(nimStackTraceOverride):
+  when not defined(nimStackTraceOverride) or not defined(libbacktrace_demangler):
     # When not overriding, we must allocate a copy of the string coming from
     # backtrace to avoid it getting released after the callback
     proc c_strdup(v: cstring): cstring {.importc: "strdup", header: "string.h".}
