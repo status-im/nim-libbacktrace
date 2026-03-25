@@ -45,26 +45,32 @@ when not (defined(nimscript) or defined(js)):
     libbacktraceUseSystemLibs {.booldefine.} = false
       ## Use the system-wide installation of libbacktrace by linking to `-lbacktrace`
 
+    libbacktraceLogErrors {.booldefine.} = false
+
   when libbacktraceUseSystemLibs:
     {.passl: "-lbacktrace".}
   else:
     import libbacktrace/build
 
-  when libbacktraceDemangle and (not (defined(windows) and sizeof(int) == 4)):
+  # Demangler seems to be missing from 32-bit windows, based on CI tests - needs
+  # investigation
+  const demangleSupported = not (defined(windows) and sizeof(int) == 4)
+
+  when libbacktraceDemangle and demangleSupported:
     {.compile: "libbacktrace/demangle.cpp".}
 
     proc libbacktrace_demangler(name: cstring): cstring {.importc.}
 
   when not defined(nimStackTraceOverride):
+    # When not overriding, we must allocate a copy of the string coming from
+    # backtrace to avoid it getting released after the callback
     proc c_strdup(v: cstring): cstring {.importc: "strdup", header: "string.h".}
 
-  when defined(windows):
-    {.passl: "-lpsapi".}
-
-  var state = backtrace_create_state(cstring(getAppFileName()), 1, nil, nil)
-
   proc error(data: pointer, msg: cstring, errnum: cint) {.cdecl.} =
-    c_fprintf(cstderr, "backtrace: %s (%d)\n", msg, errnum)
+    when libbacktraceLogErrors:
+      c_fprintf(cstderr, "backtrace: %s (%d)\n", msg, errnum)
+
+  var state = backtrace_create_state(nil, 1, error, nil)
 
   proc getProgramCounters*(maxLength: cint): seq[cuintptr_t] {.noinline.} =
     ## Capture the current stack trace up to `maxLength` depth
@@ -84,6 +90,7 @@ when not (defined(nimscript) or defined(js)):
 
     if backtrace_simple(state, 2, callback, error, addr data) == 0:
       result.setLen(data.n.int)
+      reverse(result) # Nim convention is opposite of that of backtrace
     else:
       result.reset()
 
@@ -95,38 +102,43 @@ when not (defined(nimscript) or defined(js)):
 
   when defined(nimStackTraceOverride) and
       declared(registerStackTraceOverrideGetProgramCounters):
-    registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
+    if not state.isNil:
+      registerStackTraceOverrideGetProgramCounters(libbacktrace.getProgramCounters)
 
-  proc setProcName(entry: ptr StackTraceEntry, function: cstring) =
+  template setString(
+      entry: var StackTraceEntry, a, b: untyped, function: cstring, owned: bool
+  ) =
     const projectName = querySetting(SingleValueSetting.projectName)
-    when compiles(entry[].procnameStr):
-      let function =
-        if c_strstr(function, "NimMainModule") != nil:
-          projectName
-        else:
-          # 32-bit windows does not ship a demangler in our tests!
-          when declared(libbacktrace_demangler):
-            let sn = libbacktrace_demangler(function)
-            let res = $sn
-            c_free(sn)
-            res
-          else:
-            $function
+    when compiles(entry.a):
+      entry.a = $function
+      entry.b = cstring(entry.a)
 
-      entry[].procnameStr = function
-      entry[].procname = cstring(entry[].procnameStr)
+      if owned:
+        c_free(function)
     else:
       # symname must be deallocated manually by the caller (!)
-      let function =
-        if c_strstr(function, "NimMainModule") != nil:
-          c_strdup(cstring(projectName))
+      entry.b =
+        if owned:
+          function
         else:
-          when declared(libbacktrace_demangler):
-            libbacktrace_demangler(function)
-          else:
-            c_strdup(function)
+          c_strdup(function)
 
-      entry[].procname = function
+  template setString(entry: var StackTraceEntry, a, b: untyped, function: string) =
+    when compiles(entry.a):
+      entry.a = function
+      entry.b = cstring(entry.a)
+    else:
+      # symname must be deallocated manually by the caller (!)
+      entry.b = c_strdup(function)
+
+  proc to0xHexLower(v: cuintptr_t): string =
+    const HexChars = "0123456789abcdef"
+    var v = v
+    result = newString(sizeof(v) * 2 + 2)
+    result.add "0x"
+    for j in countdown(result.len - 1, 0):
+      result[j] = HexChars[int(v and 0x0f)]
+      v = v shr 4
 
   proc getDebuggingInfo*(
       programCounters: seq[cuintptr_t], maxLength: cint
@@ -135,7 +147,7 @@ when not (defined(nimscript) or defined(js)):
     ## sequence may be longer than the input if the debug information contains
     ## inlining information.
     ##
-    ## If `-d:nimStacktraceOverride` is not enabled, you are responsible for
+    ## If `-d:nimStackTraceOverride` is not enabled, you are responsible for
     ## freeing `filename` nad `procname` with `c_free`.
     result.setLen(maxLength)
 
@@ -149,24 +161,19 @@ when not (defined(nimscript) or defined(js)):
       false,
     )
 
-    proc symInfo(
-        data: pointer,
-        pc: cuintptr_t,
-        symname: cstring,
-        symval: cuintptr_t,
-        symsize: cuintptr_t,
+    proc syminfo(
+        data: pointer, pc: cuintptr_t, symname: cstring, symval, symsize: cuintptr_t
     ) {.cdecl.} =
-      let entry = cast[ptr StackTraceEntry](data)
-      if symname == nil or symname[0] == '\0':
-        when compiles(entry[].procnameStr):
-          entry[].procnameStr = toHex(pc)
-          entry[].procname = cstring(entry[].procnameStr)
-        else:
-          entry[].procname = c_strdup(cstring(toHex(pc)))
-      else:
-        setProcName(entry, symname)
+      if symname != nil:
+        # make a copy in case backtrace deallocates `symname`
+        let function = cast[ptr cstring](data)
+        function[] =
+          when declared(libbacktrace_demangler):
+            libbacktrace_demangler(symname)
+          else:
+            strdup(symname)
 
-    proc pcInfo(
+    proc pcinfo(
         data: pointer,
         pc: cuintptr_t,
         filename: cstring,
@@ -175,54 +182,82 @@ when not (defined(nimscript) or defined(js)):
     ): cint {.cdecl.} =
       let data = cast[ptr PcData](data)
       if data.done or data.n == data.maxlen:
-        return
-      let entry = addr data.v[data.n]
-      data.n += 1
+        # Because pcInfo might becalled multiple times per pc, we might outgrow
+        # the allocated space!
+        return 1 # Stop iterating
 
-      if function == nil or function[0] == '\0':
-        when compiles(entry[].procnameStr):
-          entry[].procnameStr = toHex(pc)
-          entry[].procname = cstring(entry[].procnameStr)
-        else:
-          entry[].procname = c_strdup(cstring(toHex(pc)))
-      else:
+      var
+        function = function
+        owned = false
+          # Flag for tracking whether we made a copy of `function` already -
+          # ownership gets messy because we might have to extract it from the
+          # symbol table
+
+      if function == nil:
+        # We could not get the function name from debug information - try
+        # using the symbol name instead
+        if backtrace_syminfo(state, pc, syminfo, error, addr function) != 1:
+          function = nil
+        elif function != nil:
+          # the syminfo callback copies and demangles the function name!
+          owned = true
+
+      const projectName = querySetting(SingleValueSetting.projectName)
+
+      if function != nil:
         const skipped = [
           cstring "writeStackTrace", "rawWriteStackTrace",
           "auxWriteStackTraceWithOverride", "rawWriteStackTrace", "raiseExceptionEx",
         ]
+
         for v in skipped:
           if c_strstr(function, v) != nil:
-            return
+            if owned: # In case we got the function name from syminfo
+              c_free(function)
+            return 0 # Skipped, but we need to keep going
 
-        if c_strstr(function, "NimMainModule") != nil:
-          data.done = true
+      let entry = addr data.v[data.n]
+      data.n += 1
 
-        setProcName(entry, function)
+      if function == nil:
+        # Function unknown - put the program counter as function name instead
+        entry[].setString(procnameStr, procname, to0xHexLower(pc))
+      elif c_strstr(function, "NimMainModule") != nil:
+        # `NimMainModule` hosts all the code that lives outside of any proc/func
+        entry[].setString(procnameStr, procname, projectName)
+        data.done = true
+      else:
+        when declared(libbacktrace_demangle):
+          if not owned:
+            # demangler makes a copy of the function
+            function = libbacktrace_demangler(function)
+            owned = true
+        entry[].setString(procnameStr, procname, function, owned)
 
       if filename != nil and filename[0] != '\0':
-        when compiles(entry[].filenameStr):
-          entry[].filenameStr = $filename
-          entry[].filename = cstring(entry[].filenameStr)
-        else:
-          entry[].filename = c_strdup(filename)
+        entry[].setString(filenameStr, filename, filename, false)
 
-        entry[].line = lineno.int
+      entry[].line = lineno.int
 
-    for pc in programCounters:
-      if backtrace_pcinfo(state, pc, pcInfo, error, addr data) != 0:
+    # Process programCounters backwards then reverse, to account for inlining
+    # expanding to multiple entries and to make it easier to stop when we reach
+    # NimMain
+    for i in countdown(programCounters.high(), 0):
+      if backtrace_pcinfo(state, programCounters[i], pcinfo, error, addr data) != 0:
         break
 
     result.setLen(data.n.int)
 
-    # Nim convention.
+    # Restore nim order
     reverse(result)
 
   when defined(nimStackTraceOverride) and
       declared(registerStackTraceOverrideGetDebuggingInfo):
-    registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)
+    if not state.isNil:
+      registerStackTraceOverrideGetDebuggingInfo(libbacktrace.getDebuggingInfo)
 
   proc getBacktrace*(): string {.noinline.} =
-    ## Get a formatted backtrace    of the current call stack - for more control,
+    ## Get a formatted backtrace of the current call stack - for more control,
     ## use `getProgramCounters` and `getDebuggingInfo`.
 
     result = newStringOfCap(2048)
@@ -250,4 +285,5 @@ when not (defined(nimscript) or defined(js)):
       result.add "\p"
 
   when defined(nimStackTraceOverride) and declared(registerStackTraceOverride):
-    registerStackTraceOverride(libbacktrace.getBacktrace)
+    if not state.isNil:
+      registerStackTraceOverride(libbacktrace.getBacktrace)

@@ -45,8 +45,23 @@ type
   BacktraceFullCallback* = proc(
     data: pointer, pc: cuintptr_t, filename: cstring, lineno: cint, function: cstring
   ): cint {.capi.}
+    ##[
+   The type of the callback argument to the backtrace_full function.
+   DATA is the argument passed to backtrace_full.  PC is the program
+   counter.  FILENAME is the name of the file containing PC, or NULL
+   if not available.  LINENO is the line number in FILENAME containing
+   PC, or 0 if not available.  FUNCTION is the name of the function
+   containing PC, or NULL if not available.  This should return 0 to
+   continuing tracing.  The FILENAME and FUNCTION buffers may become
+   invalid after this function returns.
+    ]##
 
   BacktraceSimpleCallback* = proc(data: pointer, pc: cuintptr_t): cint {.capi.}
+    ##[
+   The type of the callback argument to the backtrace_simple function.
+   DATA is the argument passed to simple_backtrace.  PC is the program
+   counter.  This should return 0 to continue tracing.
+    ]##
 
   BacktraceSyminfoCallback* = proc(
     data: pointer,
@@ -55,6 +70,15 @@ type
     symval: cuintptr_t,
     symsize: cuintptr_t,
   ) {.capi.}
+    ##[
+   The type of the callback argument to backtrace_syminfo.  DATA and
+   PC are the arguments passed to backtrace_syminfo.  SYMNAME is the
+   name of the symbol for the corresponding code.  SYMVAL is the
+   value and SYMSIZE is the size of the symbol.  SYMNAME will be NULL
+   if no error occurred but the symbol could not be found.
+    ]##
+template isNil*(state: BacktraceState): bool =
+  pointer(state).isNil
 
 proc backtrace_create_state*(
   filename: cstring,
