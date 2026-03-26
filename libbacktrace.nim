@@ -50,6 +50,7 @@ when not (defined(nimscript) or defined(js)):
       ## Use the system-wide installation of libbacktrace by linking to `-lbacktrace`
 
     libbacktraceLogErrors {.booldefine.} = false
+      ## Log backtrace issues to stderr
 
   when libbacktraceUseSystemLibs:
     {.passl: "-lbacktrace".}
