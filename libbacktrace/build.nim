@@ -14,20 +14,20 @@
 # * Compression
 # * Exotic platforms
 
-import std/[compilesettings, os, strutils]
+import std/[compilesettings, os, sequtils, strutils]
 
 # Platform-specific file format support
 when defined(linux):
-  const pdefs = [
+  const pdefs = @[
     "-DBACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "-DHAVE_DL_ITERATE_PHDR=1",
     "-DHAVE_DECL_PAGESIZE=1", "-DHAVE_FCNTL=1", "-DHAVE_LINK_H=1", "-DHAVE_READLINK=1",
   ]
 elif defined(macosx):
-  const pdefs = ["-DHAVE_DECL_PAGESIZE=1", "-DHAVE_FCNTL=1", "-DHAVE_MACH_O_DYLD_H=1"]
+  const pdefs = @["-DHAVE_DECL_PAGESIZE=1", "-DHAVE_FCNTL=1", "-DHAVE_MACH_O_DYLD_H=1"]
 elif defined(windows):
-  const pdefs = ["-DHAVE__PGMPTR=1", "-DHAVE_TLHELP32_H=1", "-DHAVE_WINDOWS_H=1"]
+  const pdefs = @["-DHAVE__PGMPTR=1", "-DHAVE_TLHELP32_H=1", "-DHAVE_WINDOWS_H=1"]
 elif defined(freebsd) or defined(openbsd):
-  const pdefs = [
+  const pdefs = @[
     "-DBACKTRACE_ELF_SIZE=" & $(sizeof(pointer) * 8), "-DHAVE_DL_ITERATE_PHDR=1",
     "-DHAVE_FCNTL=1", "-DHAVE_LINK_H=1", "-DKERN_PROC=1", "-DHAVE_READLINK=1",
   ]
@@ -42,16 +42,16 @@ const
   outputDir =
     querySetting(SingleValueSetting.nimcacheDir).replace('\\', '/') & "/nim-libbacktrace"
   backtraceSupportedH = outputDir & "/backtrace-supported.h"
-  includes = ["-I" & outputDir, " -I" & sourcePath & "/../vendor/libbacktrace-upstream"]
+  includes = @["-I" & outputDir, "-I" & sourcePath & "/../vendor/libbacktrace-upstream"]
 
   # General defines that are at worst harmless on all platformss
-  defs = [
+  defs = @[
     "-D_GNU_SOURCE=1", "-D_LARGE_FILES=1", "-DHAVE_ATOMIC_FUNCTIONS=1",
     "-DHAVE_DECL_STRNLEN=1", "-DHAVE_GETIPINFO=1", "-DHAVE_LSTAT=1",
     "-DHAVE_SYNC_FUNCTIONS=1",
   ]
 
-  flags = includes.join(" ") & " " & defs.join(" ") & " " & pdefs.join(" ")
+  flags = (includes & defs & pdefs).mapIt(it.quoteShell()).join(" ")
 
 {.compile("backtrace_all.c", flags).}
 
