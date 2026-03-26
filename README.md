@@ -161,12 +161,11 @@ format knows about them (DWARF does).
 
 ### Nim compiler support
 
-Stack trace overrides are supported as of Nim [v1.0.6](https://github.com/nim-lang/Nim/pull/12922).
+Notable Nim releases include:
 
-Name mangling was added in Nim [v1.6.20+](https://github.com/nim-lang/Nim/commit/d08bba579da7df36c51d987c04085628d81cb92f)
-
-v2.2.8 includes a [critical bug fix](https://github.com/nim-lang/Nim/issues/25306)
-that otherwise might cause corruption during stack trace formatting.
+* [v1.0.6](https://github.com/nim-lang/Nim/pull/12922): Initial stack trace override support
+* [v1.6.20](https://github.com/nim-lang/Nim/commit/d08bba579da7df36c51d987c04085628d81cb92f): Itanium name mangling
+* [v2.2.8](https://github.com/nim-lang/Nim/issues/25306): Critical bug fix that avoids avoids dangling pointers during formatting
 
 ## Dependencies
 
