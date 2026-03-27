@@ -126,7 +126,7 @@ when not (defined(nimscript) or defined(js)):
       entry.field = cstring(entry.`field Str`)
     else:
       # symname must be deallocated manually by the caller (!)
-      entry.field = c_strdup(function)
+      entry.field = c_strdup(cstring(function))
 
   proc to0xHexLower(v: cuintptr_t): string =
     const HexChars = "0123456789abcdef"
@@ -175,10 +175,7 @@ when not (defined(nimscript) or defined(js)):
 
       var
         function = function
-        owned = false
-          # Flag for tracking whether we made a copy of `function` already -
-          # ownership gets messy because we might have to extract it from the
-          # symbol table
+        owned = false # Did we make a strdup of `function` already?
 
       if function == nil:
         # We could not get the function name from debug information - try
