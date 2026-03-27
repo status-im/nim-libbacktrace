@@ -44,7 +44,7 @@ when not (defined(nimscript) or defined(js)):
 
   const
     libbacktraceDemangle {.booldefine.} = true
-      ## Enabling demangling causes a dependency on the C++, for demangling
+      ## Enabling demangling causes a dependency on the C++
 
     libbacktraceUseSystemLibs {.booldefine.} = false
       ## Use the system-wide installation of libbacktrace by linking to `-lbacktrace`
@@ -56,7 +56,7 @@ when not (defined(nimscript) or defined(js)):
   else:
     import libbacktrace/build
 
-  # Demangler seems to be missing from 32-bit windows, based on CI tests - needs
+  # Demangler seems to be missing from 32-bit windows based on CI tests - needs
   # investigation
   const demangleSupported = not (defined(windows) and sizeof(int) == 4)
 
@@ -105,7 +105,7 @@ when not (defined(nimscript) or defined(js)):
   ) =
     when compiles(entry.`field Str`):
       # In override mode, a `string` in the StackTraceEntry holds the GC ref
-      # and a pointer to that ref is assigned to the public field (which might
+      # and a pointer to the payload is assigned to the public field (which might
       # lead to dangling pointers!)
       entry.`field Str` = $function
       entry.field = cstring(entry.`field Str`)

@@ -7,12 +7,12 @@
 #
 # * `backtrace-supported.h` needed by libbacktrace
 # * `config.h` - empty, but must be present
-# * A set of defines that would normally be written to said config.h (we
+# * a set of defines that would normally be written to said config.h (we
 #   equivalently pass them as flags instead)
 #
 # Features from libbacktrace that we're not using (TODO?):
-# * Compression
-# * Exotic platforms
+# * compression
+# * exotic platforms
 
 import std/[compilesettings, os, sequtils, strutils]
 
@@ -38,13 +38,14 @@ else:
 
 const
   sourcePath = currentSourcePath.rsplit({DirSep, AltSep}, 1)[0]
-  # Place output in a separate folder since we have to generate a file named "config.h"
+  # Place output in a separate folder since we have to generate a file named
+  # "config.h" and we don't want it to clash with other similarly named headers
   outputDir =
     querySetting(SingleValueSetting.nimcacheDir).replace('\\', '/') & "/nim-libbacktrace"
   backtraceSupportedH = outputDir & "/backtrace-supported.h"
   includes = @["-I" & outputDir, "-I" & sourcePath & "/../vendor/libbacktrace-upstream"]
 
-  # General defines that are at worst harmless on all platformss
+  # Defines that are harmless or benefit currently supported platforms
   defs = @[
     "-D_GNU_SOURCE=1", "-D_LARGE_FILES=1", "-DHAVE_ATOMIC_FUNCTIONS=1",
     "-DHAVE_DECL_STRNLEN=1", "-DHAVE_GETIPINFO=1", "-DHAVE_LSTAT=1",
@@ -84,13 +85,7 @@ when defined(gcc) or defined(clang):
   {.passC: "-funwind-tables".}
 
 # Platform-specific linker flags
-when defined(linux):
-  # Link with dl for dl_iterate_phdr
-  {.passl: "-ldl".}
-
-  # Link with pthread
-  {.passl: "-lpthread".}
-elif defined(macosx):
+when defined(macosx):
   # Link with System framework
   {.passl: "-framework System".}
 elif defined(windows):
