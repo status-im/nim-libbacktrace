@@ -22,14 +22,17 @@ since it prevents the C compiler from doing tail-call optimisations.
 This is a lightweight alternative based on libbacktrace, meant to offer the
 same stack traces without the runtime overhead.
 
-As of https://github.com/nim-lang/Nim/pull/23302, Nim mangles names using the
-C++ Itanium ABI.
-
-Function name demangling is supported using "\_\_cxa\_demangle()" and
-requires a C++ compiler. Set `-d:libbacktraceDemangle=true` to enable this
-feature when using C (C++ will automatically be used for the relevant bits).
-
 ## Usage
+
+`libbacktrace` can be used either stand-alone or by overriding the system stack
+trace generation. The latter approach is recommended. In both cases, you can
+add it as a nimble dependency:
+
+```nim
+requires "libbacktrace"
+```
+
+### Stand-alone operation
 
 bttest.nim:
 
@@ -53,7 +56,7 @@ make your application run twice as fast.
 your application with system debuggers like GDB, but it also enables writing
 debug information to the binary that `libbacktrace` uses to generate stack traces.
 
-### Override system stack traces
+### System stack trace override
 
 You can enable the usage of `libbacktrace` for all stack traces, including those
 used in exceptions, by using the stack trace override feature - this is the
@@ -77,8 +80,19 @@ add the options there:
 --stacktrace:off
 --import:libbacktrace
 --define:nimStackTraceOverride
---define:libbacktraceDemangle
 ```
+
+### Demangling
+
+By default, Nim will generate function names mangled according to the C++
+[Itanium ABI](https://github.com/nim-lang/Nim/pull/23302). Demangling decodes
+the mangling improving readablility of function names.
+
+Demangling is implemented by using the `cxxabi` functions present in modern C++
+compilers and therefore adds a dependency on C++ and its standard library.
+
+Turning it off with `-d:libbacktraceDemangle=false` also removes the C++ dependency
+allowing the library to be used with plain C.
 
 ### Advanced options
 
@@ -97,6 +111,7 @@ nim cpp -d:release --debugger:native --gcc.cpp.options.debug:'-g1' somefile.nim
 # Clang needs a different argument
 nim c -d:release --cc:clang --debugger:native --clang.options.debug:'-gline-tables-only' somefile.nim
 ```
+
 When the C compiler inlines some functions, or does tail-call optimisation -
 usually with `-d:release` or `-d:danger` - your stack trace might be incomplete.
 
@@ -104,20 +119,14 @@ If that's a problem, you can use `--passC:"-fno-inline -fno-optimize-sibling-cal
 
 ## Building & Testing
 
-This project uses Git submodules, so get it with:
+`libbacktrace` is built and tested with `nimble` and uses submodules to track
+the backtrace backend.
 
 ```bash
 git clone https://github.com/status-im/nim-libbacktrace.git
 cd nim-libbacktrace
 git submodule update --init
 ```
-
-You build the library (or libraries, on macOS) with `make`. You test it with
-`make test`.
-
-Nimble is grudgingly supported, so `nimble install` works. (No, we will not
-let a silly package manager dictate our project's structure. People have the
-power!)
 
 ## Supported platforms
 
@@ -141,7 +150,7 @@ let programCounters = getProgramCounters(maxLength)
 let entries = getDebuggingInfo(programCounters, maxLength)
 ```
 
-If you have multiple backtraces - and yo do with a re-raised exception - you
+If you have multiple backtraces - and you do with a re-raised exception - you
 should pass subsets of program counters representing complete stack traces to
 `getDebuggingInfo()`, because there's some logic inside it that keeps track of
 certain inlined functions in order to change the output
@@ -150,40 +159,22 @@ You may get more StackTraceEntry objects than the program counters you passed
 to `getDebuggingInfo()`, when you have inlined functions and the debugging
 format knows about them (DWARF does).
 
-### Debugging
-
-`export NIM_LIBBACKTRACE_DEBUG=1` to see the trace lines hidden by default.
-
 ### Nim compiler support
 
-Nim 1.0.6 supports [replacing the default stack tracing mechanism with an
-external one](https://github.com/nim-lang/Nim/pull/12922).
+Notable Nim releases include:
 
-This means you no longer have to call `getBacktrace()` yourself, if you compile
-your program like this:
-
-`nim c -r --debugger:native --stacktrace:off -d:nimStackTraceOverride --import:libbacktrace foo.nim`
-
-You can even use libbacktrace in the Nim compiler itself, by building it with:
-
-`./koch boot -d:release --debugger:native -d:nimStackTraceOverride --import:libbacktrace`
-
-(`-d:release` implies `--stacktrace:off`)
+* [v1.0.6](https://github.com/nim-lang/Nim/pull/12922): Initial stack trace override support
+* [v1.6.20](https://github.com/nim-lang/Nim/commit/d08bba579da7df36c51d987c04085628d81cb92f): Itanium name mangling
+* [v2.2.8](https://github.com/nim-lang/Nim/issues/25306): Critical bug fix that avoids avoids dangling pointers during formatting
 
 ## Dependencies
 
-You need Make and Nim.
+Backtraces and debug information is read using
+[libbacktrace](https://github.com/ianlancetaylor/libbacktrace) which gets built
+automatically as needed.
 
-The other dependencies are bundled, for your convenience. We use a [libbacktrace
-fork](https://github.com/ianlancetaylor/libbacktrace) with macOS support, and
-dynamically depend on the system's installed unwinder (libunwind / libSystem / libgcc\_s.so.1).
-
-If you know better and want to use your system's libbacktrace package instead
-of the bundled one, you can, with `make USE_SYSTEM_LIBS=1` and by passing
-`-d:libbacktraceUseSystemLibs` to the Nim compiler.
-
-To get the running binary's path in a cross-platform way, we rely on
-[whereami](https://github.com/gpakosz/whereami).
+To use `libbacktrace` provided by the system, add `-d:libbacktraceUseSystemLibs`
+to the flags.
 
 ## License
 

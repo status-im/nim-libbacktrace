@@ -30,4 +30,3 @@ proc f1(): int =
   return f2(1) + 1
 
 echo "res = ", f1()
-

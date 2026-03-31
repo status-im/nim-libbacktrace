@@ -51,4 +51,3 @@ try:
 except CatchableError as e:
   echo e.msg
   echo getStackTraceEntries(e)
-
