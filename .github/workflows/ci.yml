@@ -20,8 +20,6 @@ jobs:
             cpu: arm64
           - os: windows
             cpu: amd64
-          - os: windows
-            cpu: i386
         include:
           - target:
               os: linux
