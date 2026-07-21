@@ -17,6 +17,8 @@ installExt = @["nim", "h", "c", "cpp", "in"]
 
 requires "nim >= 2.0"
 
+import std/strutils
+
 task test, "Run tests":
   for test in ["test1", "test2"]:
     for be in ["c", "cpp"]:

@@ -13,6 +13,12 @@
 ## Errata:
 ## https://github.com/nim-lang/Nim/pull/25313 (< 2.2.8)
 
+when (NimMajor, NimMinor, NimPatch) < (2, 2, 8):
+  {.
+    warning:
+      "In nim < 2.2.8, stack traces may be corruped (see https://github.com/nim-lang/Nim/pull/25313)"
+  .}
+
 # Don't warn that this module is unused (e.g.: when the Nim compiler supports it
 # and users need to import it, even if they don't call getBacktrace() manually).
 {.used.}
@@ -28,10 +34,7 @@
 when not (defined(nimscript) or defined(js)):
   when defined(nimStackTraceOverride) and defined(nimHasStacktracesModule):
     when not compileOption("debuginfo"):
-      {.
-        warning:
-          "libbacktrace: no debugging symbols available. Compile with '--debugger:native'.\n"
-      .}
+      {.warning: "libbacktrace: no debugging symbols available. Compile with '-g'.\n".}
 
     import system/stacktraces
   else:
@@ -44,7 +47,7 @@ when not (defined(nimscript) or defined(js)):
 
   const
     libbacktraceDemangle {.booldefine.} = true
-      ## Enabling demangling causes a dependency on the C++
+      ## Demangling requires a C++ compiler to be installed
 
     libbacktraceUseSystemLibs {.booldefine.} = false
       ## Use the system-wide installation of libbacktrace by linking to `-lbacktrace`
