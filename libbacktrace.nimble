@@ -15,7 +15,7 @@ description = "Nim wrapper for libbacktrace"
 license = "MIT or Apache License 2.0"
 installExt = @["nim", "h", "c", "cpp", "in"]
 
-requires "nim >= 1.6.18"
+requires "nim >= 2.0"
 
 import std/strutils
 
