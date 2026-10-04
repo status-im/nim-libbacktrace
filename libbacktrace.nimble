@@ -17,17 +17,50 @@ installExt = @["nim", "h", "c", "cpp", "in"]
 
 requires "nim >= 2.0"
 
-import std/strutils
+let nimc = getEnv("NIMC", "nim") # Which nim compiler to use
+let lang = getEnv("NIMLANG", "c") # Which backend (c/cpp/js)
+let flags = getEnv("NIMFLAGS", "") # Extra flags for the compiler
+let verbose = getEnv("V", "") notin ["", "0"]
+let platform = getEnv("PLATFORM", "")
+let testArguments = ["-d:debug", "-d:release", "-d:danger"]
 
-task test, "Run tests":
-  for test in ["test1", "test2"]:
-    for be in ["c", "cpp"]:
-      for mode in ["debug", "release", "danger"]:
-        for override in ["", " -d:nimStackTraceOverride"]:
-          for mm in [" --mm:refc", " --mm:orc"]:
-            if defined(windows) and sizeof(int) == 4 and "orc" in mm:
-              continue # Seems to crash somewhere in nim..
+from std/os import quoteShell
 
-            exec "nim " & be &
-              " -r --debugger:native --outdir:build --skipParentCfg:on --skipUserCfg:on -f -d:" &
-              mode & override & mm & " tests/" & test
+let cfg =
+  " --styleCheck:usages --styleCheck:error" & (if verbose: "" else: " --verbosity:0") &
+  " --skipParentCfg --skipUserCfg --outdir:build -f " &
+  quoteShell("--nimcache:build/nimcache/$projectName") & " --debugger:native"
+
+proc build(args, path: string) =
+  exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
+
+proc run(args, path: string) =
+  build args & " -r", path
+
+task test, "Run all tests":
+  for test in ["tests/test1", "tests/test2"]:
+    for override in ["", " -d:nimStackTraceOverride"]:
+      for args in testArguments:
+        run args & override & " --mm:refc", test
+        run args & override & " --mm:orc", test
+
+task test_asan, "Run all tests with ASAN":
+  if platform != "x86":
+    try:
+      exec "echo '#if __clang_major__ < 20\n#error\n#endif' | clang -E - >/dev/null"
+    except OSError:
+      return
+
+    # https://clang.llvm.org/docs/AddressSanitizer.html
+    putEnv("ASAN_OPTIONS", "detect_leaks=0:detect_stack_use_after_return=1")
+    # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+    putEnv("UBSAN_OPTIONS", "print_stacktrace=1")
+    let asanArgs =
+      " --mm:orc -d:useMalloc --cc:clang --debugger:native" &
+      " --passC:-fsanitize=address,undefined" & " --passL:-fsanitize=address,undefined" &
+      " --passC:-fno-sanitize-recover=undefined" & " --passC:-fno-sanitize-merge" &
+      " --passC:-fno-omit-frame-pointer"
+    for test in ["tests/test1", "tests/test2"]:
+      for override in ["", " -d:nimStackTraceOverride"]:
+        for args in testArguments:
+          run args & override & asanArgs, test
