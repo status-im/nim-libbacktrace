@@ -82,7 +82,7 @@ static:
 
 when defined(gcc) or defined(clang):
   # Unwind tables are needed for libunwind to do its job
-  {.passC: "-funwind-tables".}
+  {.passc: "-funwind-tables".}
 
 # Platform-specific linker flags
 when defined(macosx):

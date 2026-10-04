@@ -79,7 +79,7 @@ when not (defined(nimscript) or defined(js)):
       haystack, needle: cstring
     ): cstring {.importc: "strstr", header: "<string.h>", noSideEffect.}
 
-  proc error(data: pointer, msg: cstring, errnum: cint) {.cdecl.} =
+  proc error(data: pointer, msg: ConstCstring, errnum: cint) {.cdecl.} =
     when libbacktraceLogErrors:
       c_fprintf(cstderr, "backtrace: %s (%d)\n", msg, errnum)
 
@@ -151,8 +151,12 @@ when not (defined(nimscript) or defined(js)):
     ## freeing `filename` and `procname` with `c_free`.
 
     proc syminfo(
-        data: pointer, pc: cuintptr_t, symname: cstring, symval, symsize: cuintptr_t
+        data: pointer,
+        pc: cuintptr_t,
+        symname: ConstCstring,
+        symval, symsize: cuintptr_t,
     ) {.cdecl.} =
+      let symname = cast[cstring](symname)
       if symname != nil:
         # make a copy in case backtrace deallocates `symname`
         let function = cast[ptr cstring](data)
@@ -166,18 +170,20 @@ when not (defined(nimscript) or defined(js)):
     proc pcinfo(
         data: pointer,
         pc: cuintptr_t,
-        filename: cstring,
+        filename: ConstCstring,
         lineno: cint,
-        function: cstring,
+        function: ConstCstring,
     ): cint {.cdecl.} =
-      let data = cast[ptr PcData](data)
+      let
+        data = cast[ptr PcData](data)
+        filename = cast[cstring](filename)
       if data.done or data.v[].len == int data.maxLength:
         # Because `pcinfo` might becalled multiple times per pc, we might outgrow
         # the allocated space!
         return 1 # Stop iterating
 
       var
-        function = function
+        function = cast[cstring](function)
         owned = false # Did we make a strdup of `function` already?
 
       if function == nil:
