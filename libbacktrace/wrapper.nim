@@ -20,9 +20,12 @@ when not declared(cuintptr_t):
   type cuintptr_t* {.importc: "uintptr_t", nodecl.} = uint
 
 type
+  ConstCstring* {.importc: "const char *".} = cstring
+
   BacktraceState* = distinct pointer
 
-  BacktraceErrorCallback* = proc(data: pointer, msg: cstring, errnum: cint) {.capi.}
+  BacktraceErrorCallback* =
+    proc(data: pointer, msg: ConstCstring, errnum: cint) {.capi.}
     ##[
    The type of the error callback argument to backtrace functions.
    This function, if not NULL, will be called for certain error cases.
@@ -43,7 +46,11 @@ type
    ]##
 
   BacktraceFullCallback* = proc(
-    data: pointer, pc: cuintptr_t, filename: cstring, lineno: cint, function: cstring
+    data: pointer,
+    pc: cuintptr_t,
+    filename: ConstCstring,
+    lineno: cint,
+    function: ConstCstring,
   ): cint {.capi.}
     ##[
    The type of the callback argument to the backtrace_full function.
@@ -66,7 +73,7 @@ type
   BacktraceSyminfoCallback* = proc(
     data: pointer,
     pc: cuintptr_t,
-    symname: cstring,
+    symname: ConstCstring,
     symval: cuintptr_t,
     symsize: cuintptr_t,
   ) {.capi.}
@@ -82,7 +89,7 @@ template isNil*(state: BacktraceState): bool =
   pointer(state).isNil
 
 proc backtrace_create_state*(
-  filename: cstring,
+  filename: ConstCstring,
   threaded: cint,
   error_callback: BacktraceErrorCallback,
   data: pointer,
